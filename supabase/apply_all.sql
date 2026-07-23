@@ -169,7 +169,9 @@ as $$
   returning *;
 $$;
 
+-- Clients must never call this directly; the server (service_role) must.
 revoke all on function public.claim_evaluation(uuid, int) from public, anon, authenticated;
+grant execute on function public.claim_evaluation(uuid, int) to service_role;
 delete from public.corpus_essays where source in ('anchor','seed');
 insert into public.corpus_essays (content, source, locked, elo, match_count, prose_score, label) values
 ('People always ask me how I manage to be good at so many things. Honestly, I don''t have a great answer. Some people are just built to lead, and I''ve known since middle school that I''m one of them.

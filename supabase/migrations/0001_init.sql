@@ -169,4 +169,6 @@ as $$
   returning *;
 $$;
 
+-- Clients must never call this directly; the server (service_role) must.
 revoke all on function public.claim_evaluation(uuid, int) from public, anon, authenticated;
+grant execute on function public.claim_evaluation(uuid, int) to service_role;
