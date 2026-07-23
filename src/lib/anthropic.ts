@@ -103,26 +103,44 @@ async function openAiCompatCall<T>(opts: StructuredCallOpts): Promise<T> {
   const reasoning = process.env.LLM_REASONING_EFFORT;
   const maxTokens = Math.max(opts.maxTokens ?? 2048, reasoning ? 1200 : 512);
 
-  const res = await fetch(`${base.replace(/\/$/, "")}/chat/completions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-    body: JSON.stringify({
-      model: opts.model,
-      max_tokens: maxTokens,
-      temperature: 0,
-      response_format: { type: "json_object" },
-      ...(reasoning ? { reasoning_effort: reasoning } : {}),
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: opts.user },
-      ],
-    }),
+  const body = JSON.stringify({
+    model: opts.model,
+    max_tokens: maxTokens,
+    temperature: 0,
+    response_format: { type: "json_object" },
+    ...(reasoning ? { reasoning_effort: reasoning } : {}),
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: opts.user },
+    ],
   });
 
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error(`LLM request failed (${res.status}): ${detail.slice(0, 300)}`);
+  // Retry rate limits (429) and transient server errors with backoff. Free
+  // tiers throttle aggressively; an evaluation makes ~21 calls in a burst.
+  // Bounded so one call's total retry time (~1.5+3+6+12 ≈ 22s) stays well
+  // under the serverless function limit even when fully throttled.
+  const MAX_ATTEMPTS = 5;
+  let res!: Response;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    res = await fetch(`${base.replace(/\/$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body,
+    });
+    if (res.ok) break;
+    const retryable = res.status === 429 || res.status >= 500;
+    if (!retryable || attempt === MAX_ATTEMPTS) {
+      const detail = await res.text().catch(() => "");
+      throw new Error(`LLM request failed (${res.status}): ${detail.slice(0, 300)}`);
+    }
+    const retryAfter = Number(res.headers.get("retry-after"));
+    const wait =
+      retryAfter > 0
+        ? Math.min(retryAfter * 1000, 15000)
+        : Math.min(1500 * 2 ** (attempt - 1), 12000);
+    await new Promise((r) => setTimeout(r, wait + Math.random() * 400));
   }
+
   const data = (await res.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
   };

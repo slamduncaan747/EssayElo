@@ -79,24 +79,32 @@ async function judgeOnce(
     maxTokens: 1500,
   });
 
+  // Winner + margin are load-bearing (they drive the Elo). Everything else is
+  // harvest — default it rather than crash a whole evaluation on a smaller
+  // model's occasional missing field.
+  if (out.winner !== "A" && out.winner !== "B") {
+    throw new Error("judge returned no winner");
+  }
+  const margin: Margin =
+    out.margin === "decisive" || out.margin === "clear" || out.margin === "narrow"
+      ? out.margin
+      : "narrow";
   const userSide: "A" | "B" = userIsA ? "A" : "B";
   const userWon = out.winner === userSide;
-  const side = userIsA ? out.a : out.b;
+  const side = (userIsA ? out.a : out.b) ?? ({} as CompareSide);
+  const df = out.direction_flag;
   const harvest: Harvest = {
-    decisive_differentiator: out.decisive_differentiator,
-    axis: out.axis,
-    win_reason: userWon ? out.winner_reason : null,
-    loss_reason: userWon ? null : out.loser_reason,
-    most_producible_revelation: side.most_producible_revelation,
-    producibility_estimate: side.producibility_estimate,
-    met_person_moment: side.met_person_moment,
-    wasted_opportunity: side.wasted_opportunity,
-    direction_flag:
-      out.direction_flag && out.direction_flag.essay === userSide
-        ? out.direction_flag.note
-        : null,
+    decisive_differentiator: out.decisive_differentiator ?? "",
+    axis: out.axis ?? "producibility",
+    win_reason: userWon ? out.winner_reason ?? null : null,
+    loss_reason: userWon ? null : out.loser_reason ?? null,
+    most_producible_revelation: side.most_producible_revelation ?? "",
+    producibility_estimate: side.producibility_estimate ?? "",
+    met_person_moment: side.met_person_moment ?? null,
+    wasted_opportunity: side.wasted_opportunity ?? null,
+    direction_flag: df && df.essay === userSide ? df.note : null,
   };
-  return { userWon, margin: out.margin, harvest };
+  return { userWon, margin, harvest };
 }
 
 /** Both orderings of one match, in parallel. */

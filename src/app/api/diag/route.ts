@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { JUDGE_MODEL, PROVIDER, structuredCall } from "@/lib/anthropic";
+import { judgeMatchPair } from "@/lib/engine/judge";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -66,6 +67,22 @@ export async function GET() {
     out.llm = {
       ok: false,
       ms: Date.now() - started,
+      error: e instanceof Error ? e.message : String(e),
+    };
+  }
+
+  // 4. The real head-to-head call (complex nested schema) through the judge.
+  const t2 = Date.now();
+  try {
+    const [v] = await judgeMatchPair(
+      "I keep a spreadsheet of every word I have ever mispronounced in public. Column D is witnesses. Writing the humiliation down converts it to data, and data does not hurt.",
+      "My mission trip to Guatemala changed my life and taught me not to take things for granted."
+    );
+    out.judge = { ok: true, ms: Date.now() - t2, userWon: v.userWon, margin: v.margin };
+  } catch (e) {
+    out.judge = {
+      ok: false,
+      ms: Date.now() - t2,
       error: e instanceof Error ? e.message : String(e),
     };
   }
