@@ -98,14 +98,20 @@ async function openAiCompatCall<T>(opts: StructuredCallOpts): Promise<T> {
   }
   const system = `${opts.system}\n\nRespond with ONLY a JSON object, no prose or markdown, matching this JSON schema exactly:\n${JSON.stringify(opts.schema)}`;
 
+  // Reasoning models (e.g. Gemini flash) spend output tokens thinking before
+  // the JSON, so floor the budget and pass through the effort control.
+  const reasoning = process.env.LLM_REASONING_EFFORT;
+  const maxTokens = Math.max(opts.maxTokens ?? 2048, reasoning ? 1200 : 512);
+
   const res = await fetch(`${base.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({
       model: opts.model,
-      max_tokens: opts.maxTokens ?? 2048,
+      max_tokens: maxTokens,
       temperature: 0,
       response_format: { type: "json_object" },
+      ...(reasoning ? { reasoning_effort: reasoning } : {}),
       messages: [
         { role: "system", content: system },
         { role: "user", content: opts.user },
