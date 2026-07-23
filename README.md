@@ -30,11 +30,12 @@ Set `MOCK_JUDGE=1` in `.env.local` to run the entire product with a deterministi
 
 ## Setup (one time)
 
-1. **Supabase** — the project `margin` (othgmblwoxeemzltjdfn) already has the schema applied (`supabase/migrations/0001_init.sql`). Seed the corpus either by pasting `supabase/migrations/0002_seed_corpus.sql` into the SQL editor, or:
-   ```bash
-   NEXT_PUBLIC_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npx tsx scripts/seed-db.ts
-   ```
-   Get the anon + service-role keys from Project Settings → API. Optionally disable "Confirm email" (Auth → Sign In / Up) for friction-free signup while testing.
+1. **Supabase** (project `kbcinsjhfshbzywmuute`) — apply the schema and seed the
+   corpus by pasting **`supabase/apply_all.sql`** (schema + seed combined) into
+   the SQL editor. Or, with the Supabase MCP connected, `apply_migration` the two
+   files in `supabase/migrations/` in order. Then grab the anon + service-role
+   keys from Project Settings → API. Optionally disable "Confirm email"
+   (Auth → Sign In / Up) for friction-free signup while testing.
 2. **Stripe** — create the product/price and copy the id:
    ```bash
    STRIPE_SECRET_KEY=sk_... npx tsx scripts/setup-stripe.ts   # prints STRIPE_PRICE_ID
