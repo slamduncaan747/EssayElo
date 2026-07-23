@@ -1,0 +1,184 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { EvaluationPhase } from "@/lib/types";
+
+interface StepState {
+  status: string;
+  phase: EvaluationPhase | string;
+  matches_done: number;
+  budget: number;
+  busy?: boolean;
+}
+
+const PHASE_LABEL: Record<string, string> = {
+  placement: "Reading your essay…",
+  match: "Scoring…",
+  prose: "Measuring prose…",
+  synthesis: "Finalizing…",
+};
+
+/**
+ * Evaluating state (design 11d): essay under a scan line, dark panel with a
+ * page-miniature loader. This component *drives* the evaluation — each poll
+ * advances the tournament one step, so the run survives serverless limits
+ * and resumes if the tab is reopened.
+ */
+export default function EvaluatingView({
+  evaluationId,
+  title,
+  version,
+  content,
+  initial,
+}: {
+  evaluationId: string;
+  title: string;
+  version: number;
+  content: string;
+  initial: StepState;
+}) {
+  const router = useRouter();
+  const [state, setState] = useState<StepState>(initial);
+  const [failed, setFailed] = useState(false);
+  const running = useRef(false);
+
+  const drive = useCallback(async () => {
+    if (running.current) return;
+    running.current = true;
+    let errors = 0;
+    let current: StepState = initial;
+    while (current.status === "running") {
+      try {
+        const res = await fetch(`/api/evaluations/${evaluationId}/step`, { method: "POST" });
+        if (!res.ok) throw new Error(String(res.status));
+        current = (await res.json()) as StepState;
+        errors = 0;
+        setState(current);
+        if (current.busy) await new Promise((r) => setTimeout(r, 2500));
+      } catch {
+        errors++;
+        if (errors >= 4) {
+          setFailed(true);
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 2000 * errors));
+      }
+    }
+    if (current.status === "done") router.refresh();
+    if (current.status === "failed") setFailed(true);
+  }, [evaluationId, initial, router]);
+
+  useEffect(() => {
+    void drive();
+  }, [drive]);
+
+  // Progress: placement 5%, matches 5–80%, prose 85%, synthesis 92%.
+  const pct =
+    state.phase === "placement"
+      ? 5
+      : state.phase === "match"
+        ? 5 + (state.matches_done / Math.max(state.budget, 1)) * 75
+        : state.phase === "prose"
+          ? 85
+          : 92;
+
+  const paragraphs = content.split(/\n\s*\n/).filter((p) => p.trim());
+
+  return (
+    <div className="workspace">
+      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <div className="doc-header">
+          <div className="doc-title">
+            <b>{title}</b>
+            <span className="chip">Draft {version}</span>
+          </div>
+          <span className="eval-status">
+            <span className="pulse-dot" />
+            EVALUATING
+          </span>
+        </div>
+        <div className="essay-body">
+          <div className="essay-text scan-wrap" style={{ position: "relative" }}>
+            <div className="scan-line" />
+            {paragraphs.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="panel-dark">
+        <div className="panel-pad">
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span className="mono-label" style={{ letterSpacing: ".14em" }}>EVALUATION</span>
+            <span style={{ font: "italic 500 20px var(--serif)" }}>
+              {failed ? "Something went wrong" : PHASE_LABEL[state.phase] ?? "Working…"}
+            </span>
+          </div>
+
+          {failed ? (
+            <div style={{ font: "400 12.5px/1.6 var(--sans)", color: "rgba(245,241,233,.7)" }}>
+              The evaluation hit an error. Your evaluation was not counted —{" "}
+              <button
+                onClick={() => location.reload()}
+                style={{ color: "var(--gold)", textDecoration: "underline" }}
+              >
+                try again
+              </button>
+              .
+            </div>
+          ) : (
+            <>
+              <div className="page-mini">
+                <div className="read-band" />
+                {[90, 100, 96, 58, 0, 98, 92, 44, 0, 95, 70, 0, 97, 62].map((w, i) =>
+                  w === 0 ? (
+                    <div key={i} style={{ height: 8 }} />
+                  ) : (
+                    <div key={i} className="line" style={{ width: `${w}%` }} />
+                  )
+                )}
+              </div>
+
+              <div className="status-chips">
+                <span className={`status-chip ${state.phase === "placement" ? "live" : ""}`}>
+                  {state.phase === "placement" ? "structure…" : "structure ✓"}
+                </span>
+                <span className={`status-chip ${state.phase === "match" ? "live" : ""}`}>
+                  {state.phase === "match"
+                    ? `scoring ${state.matches_done}/${state.budget}…`
+                    : state.phase === "placement"
+                      ? "scoring"
+                      : "scoring ✓"}
+                </span>
+                <span
+                  className={`status-chip ${
+                    state.phase === "prose" || state.phase === "synthesis" ? "live" : ""
+                  }`}
+                >
+                  {state.phase === "synthesis" ? "finalizing…" : "prose"}
+                </span>
+              </div>
+
+              <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 7 }}>
+                <div className="eval-progress">
+                  <div style={{ width: `${pct}%` }} />
+                </div>
+                <span
+                  style={{
+                    font: "400 11px var(--mono)",
+                    color: "rgba(245,241,233,.4)",
+                    textAlign: "center",
+                  }}
+                >
+                  usually a few minutes
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
