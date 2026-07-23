@@ -135,23 +135,28 @@ async function stepMatch(db: SupabaseClient, ev: Evaluation): Promise<StepResult
 
   const [{ data: corpusRows, error: corpusErr }, { data: priorMatches }] =
     await Promise.all([
-      db
-        .from("corpus_essays")
-        .select("id, elo, locked, match_count")
-        .neq("owner_draft_id", ev.draft_id),
+      // Fetch the whole corpus; exclude this draft's own row in JS. A PostgREST
+      // .neq filter on owner_draft_id would drop every NULL row (SQL NULL != x
+      // is NULL, not true) — i.e. all anchors and seeds.
+      db.from("corpus_essays").select("id, elo, locked, match_count, owner_draft_id"),
       db
         .from("matches")
         .select("corpus_essay_id, winner, opp_elo, weight")
         .eq("evaluation_id", ev.id),
     ]);
-  if (corpusErr || !corpusRows?.length) throw new Error("corpus unavailable");
+  if (corpusErr) throw new Error(`corpus unavailable: ${corpusErr.message}`);
+
+  const corpus = (corpusRows ?? []).filter(
+    (c) => (c.owner_draft_id as string | null) !== ev.draft_id
+  );
+  if (corpus.length === 0) throw new Error("corpus is empty — is it seeded?");
 
   const used = new Set<string>((priorMatches ?? []).map((m) => m.corpus_essay_id as string));
-  const pool: Opponent[] = corpusRows.map((c) => ({ id: c.id as string, elo: c.elo as number }));
+  const pool: Opponent[] = corpus.map((c) => ({ id: c.id as string, elo: c.elo as number }));
   const opponent = pickOpponent(ev.elo!, ev.matches_done, pool, used);
   if (!opponent) throw new Error("no opponents available");
 
-  const oppRow = corpusRows.find((c) => c.id === opponent.id)!;
+  const oppRow = corpus.find((c) => c.id === opponent.id)!;
   const { data: oppContent } = await db
     .from("corpus_essays")
     .select("content")
