@@ -172,9 +172,17 @@ $$;
 -- Clients must never call this directly; the server (service_role) must.
 revoke all on function public.claim_evaluation(uuid, int) from public, anon, authenticated;
 grant execute on function public.claim_evaluation(uuid, int) to service_role;
-delete from public.corpus_essays where source in ('anchor','seed');
-insert into public.corpus_essays (content, source, locked, elo, match_count, prose_score, label) values
-('People always ask me how I manage to be good at so many things. Honestly, I don''t have a great answer. Some people are just built to lead, and I''ve known since middle school that I''m one of them.
+-- Margin corpus seed (additive, safe to re-run).
+-- Adds any missing anchor/seed essays; never touches rows already present,
+-- so accreted ratings and referencing match history are preserved.
+
+create unique index if not exists corpus_essays_label_key
+  on public.corpus_essays (label);
+
+insert into public.corpus_essays
+  (content, source, locked, elo, match_count, prose_score, label)
+values
+  ('People always ask me how I manage to be good at so many things. Honestly, I don''t have a great answer. Some people are just built to lead, and I''ve known since middle school that I''m one of them.
 
 Take my robotics team. Before I joined, they had never made it past regionals. The other members were content with mediocrity, showing up to meetings to socialize instead of work. I don''t operate that way. I took over the design process, redid the code myself because frankly it was faster than explaining it, and we made it to states. Some teammates complained that I didn''t "collaborate," but results speak for themselves. You can''t argue with a trophy.
 
@@ -183,7 +191,7 @@ School comes easily to me, which teachers sometimes resent. In AP History, I cor
 What do I want from college? A place that can finally keep up. I want professors who challenge me instead of feeling threatened, and classmates who don''t need me to carry every group project — though if I''m being realistic, I''ll probably end up carrying some anyway. I''ve made my peace with that. It''s the tax you pay for being capable.
 
 My guidance counselor told me to write this essay about a time I failed. I considered it, but the truth is my failures have all been other people''s failures that I couldn''t fully compensate for. The generator of my success is internal, and it hasn''t stopped running yet. Whichever college is lucky enough to get me will find that out quickly.', 'anchor', true, 1100, 999, 42, 'anchor-10-self-damaging'),
-('The whistle blew and I went down hard. As I lay on the turf clutching my knee, I didn''t know it yet, but my life was about to change forever.
+  ('The whistle blew and I went down hard. As I lay on the turf clutching my knee, I didn''t know it yet, but my life was about to change forever.
 
 Tearing my ACL junior year was the hardest thing I have ever gone through. Soccer had been my life since I was five years old. I had dreamed of playing in college, and in one moment, that dream was taken away from me. At first, I was devastated. I didn''t want to talk to anyone. I felt like I had lost a part of myself.
 
@@ -192,7 +200,7 @@ But as the months of physical therapy went on, I began to realize something impo
 Recovery taught me the true meaning of resilience. Every small step — walking without crutches, jogging for the first time, finally sprinting again — showed me that progress comes from showing up every day, even when it''s hard. I learned that setbacks are really setups for comebacks.
 
 Now, as I prepare for college, I know that whatever challenges come my way, I can handle them. My injury didn''t end my story; it started a new chapter. I may never play competitive soccer again, but the lessons I learned from losing it will stay with me forever. I am stronger, more well-rounded, and more grateful than I was before. And for that, I have a torn ligament to thank.', 'anchor', true, 1250, 999, 40, 'anchor-25-competent-weak'),
-('My grandmother''s kitchen smelled of cardamom and burnt sugar, and it is the first place I remember feeling entirely safe.
+  ('My grandmother''s kitchen smelled of cardamom and burnt sugar, and it is the first place I remember feeling entirely safe.
 
 Every summer until I was fourteen, I spent July in her apartment in Queens, standing on a plastic stool at her counter while she cooked. She never used recipes. She measured rice in the cup of her palm and salt by the sound it made leaving the jar. When I asked how she knew, she would tap her temple and say, in Urdu, "The hands remember what the heart has practiced."
 
@@ -203,7 +211,7 @@ Last spring, she had a stroke. The hands that remembered everything now tremble 
 I used to think her cooking was about food. I understand now that it was about continuity — a way of carrying a village across an ocean one meal at a time. When I cook for her, I am not repaying a debt. I am accepting an inheritance.
 
 I don''t know yet what I will study, or what I will become. But I know what I carry: the patience to practice something until my hands remember it, and the understanding that love, most of the time, looks like showing up on Sunday and getting the rice slightly wrong.', 'anchor', true, 1450, 999, 68, 'anchor-45-linchpin-polished-familiar'),
-('I keep a spreadsheet of every word I''ve ever mispronounced in public. It has 217 entries. Column D is "witnesses."
+  ('I keep a spreadsheet of every word I''ve ever mispronounced in public. It has 217 entries. Column D is "witnesses."
 
 It started in seventh grade when I said "epitome" to rhyme with "metronome" in front of my English class, and a girl named Dana laughed so hard she had to leave the room. That night, instead of dying of shame like a normal person, I opened Google Sheets. Word: epitome. Correct pronunciation: ih-PIT-uh-mee. Witnesses: 24. Somehow, writing it down converted the humiliation into data, and data doesn''t hurt.
 
@@ -216,7 +224,7 @@ I''ve started collecting other people''s entries too. My calculus teacher says "
 I don''t fully know what I want to do with this, which my college counselor says is a problem with this essay. But somewhere between the data and the embarrassment is the thing I actually am: a person who would rather log the wound than hide it, who thinks a mistake is just a fact you haven''t organized yet. Column E, which I added last year, is "would I unlearn this word to avoid the embarrassment?"
 
 Two hundred and seventeen rows. Every single one says no.', 'anchor', true, 1600, 999, 50, 'anchor-60-distinctive-uneven'),
-('My father and I have argued about the same intersection for six years.
+  ('My father and I have argued about the same intersection for six years.
 
 Not politics, not curfews — an intersection. Route 9 and Miller Road, where the left-turn arrow lasts eleven seconds. My father, who drove a city bus in Lagos before we came here, believes the arrow is too short by design: "They time the lights for the people leaving the nice neighborhood, not entering it." I believed, at eleven, that he was paranoid. So I did what I have always done when I think someone is wrong: I started counting.
 
@@ -229,7 +237,7 @@ I think about that sentence more than anything anyone has said to me. He had car
 I''ve since presented the map to our town''s traffic subcommittee, who thanked me and changed nothing. I used to think that made the project a failure. But the subcommittee was never really the audience. The audience was a bus driver from Lagos who spent six years being told, by his own son, that he was imagining things — and who kept saying "go count it" anyway.
 
 I want to spend my life counting the things people carry but can''t prove. Not because the committees will listen. Because someone at the kitchen table is waiting to be checked.', 'anchor', true, 1800, 999, 60, 'anchor-80-standout'),
-('Last summer I went on a mission trip to Guatemala that changed my life. Before the trip, I took many things for granted, like clean water, my house, and my education. Seeing how the people there lived opened my eyes to how lucky I am.
+  ('Last summer I went on a mission trip to Guatemala that changed my life. Before the trip, I took many things for granted, like clean water, my house, and my education. Seeing how the people there lived opened my eyes to how lucky I am.
 
 We spent one week building a school for the children of the village. It was hard work in the hot sun, but seeing the smiles on the kids'' faces made it all worth it. Even though we did not speak the same language, we communicated through soccer and laughter. It showed me that people everywhere are the same at heart.
 
@@ -238,7 +246,7 @@ One little boy named Miguel followed me around all week. On the last day he gave
 This trip taught me not to take things for granted and that helping others is the most rewarding thing you can do. It inspired me to start a volunteer club at my school where we do community service projects every month. We have already done a canned food drive and a park cleanup.
 
 In college I want to continue giving back to the community and maybe study abroad to experience more cultures. The world is a big place and I have learned that we all have something to learn from each other. Guatemala will always have a special place in my heart, and I will never forget the people who taught me that happiness doesn''t come from what you have, but from what you give.', 'seed', false, 1150, 6, 33, 'seed-15-generic-mission'),
-('Throughout my four years of high school, I have challenged myself in many ways that have prepared me for college and beyond.
+  ('Throughout my four years of high school, I have challenged myself in many ways that have prepared me for college and beyond.
 
 As president of the National Honor Society, I organized our chapter''s largest tutoring program ever, with over thirty student volunteers. Balancing this with my responsibilities as varsity tennis captain and first-chair violin taught me time management skills that I know will serve me well. There were weeks when I went straight from practice to rehearsal to a leadership meeting, and I learned to use every spare minute productively.
 
@@ -247,7 +255,7 @@ Academically, I have taken the most rigorous course load available at my school,
 But my activities have taught me more than any single class. Tennis taught me perseverance, especially when I lost in the sectional finals junior year and had to rebuild my confidence. Violin taught me discipline, because no one becomes first chair without practicing when they would rather be with friends. And NHS taught me that leadership is about service, not titles.
 
 I believe my combination of academic rigor, leadership experience, and extracurricular commitment makes me ready for the challenges of a top university. I am excited to bring my work ethic, curiosity, and dedication to a campus community, and to keep growing into the leader I know I can become.', 'seed', false, 1200, 6, 36, 'seed-20-resume-recital'),
-('The day my parents told me they were getting divorced, I was twelve years old and had just come home from a friend''s birthday party. I remember the cake still sitting in my stomach while they sat me down in the living room and used calm voices that scared me more than yelling would have.
+  ('The day my parents told me they were getting divorced, I was twelve years old and had just come home from a friend''s birthday party. I remember the cake still sitting in my stomach while they sat me down in the living room and used calm voices that scared me more than yelling would have.
 
 For a long time after that, I split my life into two backpacks. One week at Mom''s apartment, one week at Dad''s house. Two toothbrushes, two desks, two versions of myself. At Mom''s I was quieter, because she cried sometimes at night and I didn''t want to add to it. At Dad''s I was more cheerful than I felt, because he tried so hard with his frozen pizzas and movie nights.
 
@@ -256,7 +264,7 @@ Slowly, things got better. I got better. I learned to speak up when the schedule
 The divorce also taught me that adults are just people. My parents made mistakes, apologized, and kept showing up. That might be the most important thing I''ve learned: love isn''t about being perfect, it''s about continuing to show up.
 
 I wouldn''t wish those years on anyone, but I wouldn''t trade what they gave me either. I am more empathetic, more adaptable, and more honest about my feelings than I would have been otherwise. Whatever roommate I end up with in college, they''re getting someone who knows how to share a space, listen at midnight, and make a decent frozen pizza.', 'seed', false, 1280, 6, 44, 'seed-28-divorce-safe'),
-('Three weeks before the regional robotics competition, our robot could not pick up a single ball. The intake mechanism we had spent two months designing jammed every third attempt, and morale in the workshop was at an all-time low.
+  ('Three weeks before the regional robotics competition, our robot could not pick up a single ball. The intake mechanism we had spent two months designing jammed every third attempt, and morale in the workshop was at an all-time low.
 
 As lead builder, I felt responsible. I had pushed for the complicated four-bar design over the simpler roller intake that our programmer, Kevin, had suggested. Admitting I was wrong was harder than any technical problem we faced that season. But one Tuesday night, staring at the jammed mechanism for the hundredth time, I turned to the team and said the words out loud: "Kevin was right. Let''s rebuild."
 
@@ -265,7 +273,7 @@ We had nineteen days. We divided into pairs and worked in shifts — CAD in the 
 What I remember most isn''t the competition, though. It''s the moment I admitted the mistake. The room didn''t erupt in blame like I had feared. Instead, everyone just started solving. I learned that a team doesn''t need a leader who is always right; it needs a leader who tells the truth fast enough for the team to do something about it.
 
 I plan to study mechanical engineering, and I know I will make more wrong calls — engineering is wrong calls, corrected. What robotics gave me is the reflex to say so out loud, on Tuesday, with nineteen days left, while there is still time to rebuild.', 'seed', false, 1320, 6, 41, 'seed-32-robotics-standard'),
-('I have attended four schools in three states, and at every one of them I have been "the new kid" — a title that comes with an invisible clipboard. People decide things about you in the first week, and you spend the rest of the year living inside their decisions.
+  ('I have attended four schools in three states, and at every one of them I have been "the new kid" — a title that comes with an invisible clipboard. People decide things about you in the first week, and you spend the rest of the year living inside their decisions.
 
 By the third move, the summer before ninth grade, I had developed a strategy: say yes to everything for one month. Yes to the lunch invitation from the theater kids, yes to the pickup basketball game where I knew nobody, yes to the study group for a class I was already good at. My mom called it my "yes month." It was exhausting and slightly fake, and it worked — not because I fooled anyone, but because saying yes that many times meant that by October, at least three of the yeses had turned into something real.
 
@@ -274,7 +282,7 @@ In Ohio, the yes that stuck was stage crew. In Arizona, it was cross country, a 
 Moving taught me that belonging isn''t found, it''s constructed — one slightly forced yes at a time. I''ve watched kids who lived in the same town their whole lives feel more alone than I ever was, because they thought community was something that was supposed to just happen to them.
 
 When I get to college, everyone will be the new kid at the same time. I already know what I''ll be doing that first month. My roommate should be warned: I will be saying yes to almost everything, and I will probably drag them with me.', 'seed', false, 1360, 6, 45, 'seed-36-moving-schools'),
-('Register four at Hartley''s Market has a wobble. You have to shim the left leg with a folded receipt or the whole station rocks every time you scan a can. I know this because I have spent eleven hundred hours behind it.
+  ('Register four at Hartley''s Market has a wobble. You have to shim the left leg with a folded receipt or the whole station rocks every time you scan a can. I know this because I have spent eleven hundred hours behind it.
 
 I took the job sophomore year because my family needed me to, which is a sentence I used to be embarrassed by and am not anymore. Twenty hours a week, Thursday through Sunday. While my friends posted from football games, I was learning the produce codes by heart — 4011 bananas, 4064 tomatoes — and learning things about my town that you cannot learn anywhere but a checkout line.
 
@@ -283,7 +291,7 @@ You learn who is struggling by what they put back. It is almost never the junk f
 I got faster, then I got promoted, then I started training new hires. My training speech has one rule in it that Mr. Hartley never taught me but I learned at register four: you are the last person some of these customers will talk to all day. Mrs. Okafor comes in daily for one apple and one conversation. The apple is an excuse.
 
 I don''t romanticize the job. My feet hurt and the pay is what it is. But I have a education you can''t get in a classroom: eleven hundred hours of watching what people carry, and learning which small things I can do about it.', 'seed', false, 1400, 6, 46, 'seed-40-grocery-job'),
-('I joined debate to learn how to talk. I stayed because it taught me how to lose.
+  ('I joined debate to learn how to talk. I stayed because it taught me how to lose.
 
 My first tournament, I went 0-4. I had memorized statistics, framed arguments, practiced my closing in the mirror — and I lost every single round. On the bus home, my coach handed me the judges'' ballots. One comment appeared, in different handwriting, on three of the four: "Doesn''t respond to opponent''s actual arguments."
 
@@ -294,7 +302,7 @@ The fix was harder than it sounds. To actually respond to someone, you have to a
 But the real evidence that debate changed me happened at Thanksgiving. My uncle said something about immigration that I disagreed with, and instead of loading my counterargument while he talked, I heard myself say, "So your actual worry is about wages, not culture — is that right?" He stopped. He said, "Yes. Nobody ever says that part back to me." We talked for an hour. I did not change his mind, and this time that genuinely wasn''t the point.
 
 I used to think debate was the art of being unanswerable. It is closer to the opposite: the discipline of being answerable — of stating the other side so fairly that your disagreement, when it comes, actually lands on something real. I want to study law, where I am told listening is a competitive advantage. It shouldn''t be. But I''ll take it.', 'seed', false, 1420, 6, 48, 'seed-42-debate-listening'),
-('The metronome on my piano is older than I am. It belonged to my first teacher, Mrs. Albrecht, who gave it to me when she retired, and its tick has been the background rhythm of my life for eleven years.
+  ('The metronome on my piano is older than I am. It belonged to my first teacher, Mrs. Albrecht, who gave it to me when she retired, and its tick has been the background rhythm of my life for eleven years.
 
 I was not a prodigy. This took me years to accept. At nine, I watched a boy my age play Chopin''s Fantaisie-Impromptu on YouTube and cried, because I was still counting quarter notes in a beginner book. My parents never pushed; if anything, they offered me exits. I refused them out of what I can only call stubbornness, because it certainly wasn''t talent.
 
@@ -303,7 +311,7 @@ What I had instead was the metronome. Forty beats per minute, then forty-four, t
 Piano gave me a body of knowledge about myself that I apply everywhere. When calculus stopped making sense, I found the tempo at which it was boring — rederiving each rule until it was mechanical — and sped up from there. When I couldn''t run a mile, I ran a slow half mile for two weeks.
 
 I will never be a concert pianist, and I have made peace with the metronome''s real lesson: talent sets the ceiling, but tempo sets the floor, and you can live a whole life raising the floor. Tick by tick, forty beats a minute, I intend to keep doing exactly that.', 'seed', false, 1450, 6, 52, 'seed-45-piano-competent'),
-('My father doesn''t say "I love you." He says "merlin, two o''clock, on the wire."
+  ('My father doesn''t say "I love you." He says "merlin, two o''clock, on the wire."
 
 We started birding when I was ten, after his heart surgery, when the doctor prescribed walking and my mother prescribed me as his companion. Neither of us wanted to be there. He walked too slowly; I complained too much. Then one morning a bird neither of us could name — gray, sharp-winged, sitting like a fist on a telephone wire — refused to be ignored. We looked it up together at the kitchen table. Merlin. A small falcon. My father, an accountant who had not expressed wonder in my presence in a decade, said "huh" in a voice I didn''t recognize.
 
@@ -312,7 +320,7 @@ Eight years later we have a life list of 214 species, kept in a shared note on o
 I''ve come to think everyone bilingual in the same way — everyone has someone they love in a language that doesn''t use the usual words. My father''s dialect happens to have feathers. When I found a snowy owl at the county landfill last winter — a genuinely rare bird, a once-a-decade bird — I didn''t post it anywhere. I called him at work. He left early. We stood in the cold smell of garbage watching a white owl on a trash mountain, and he put his hand on my shoulder and left it there.
 
 Merlin, two o''clock, on the wire. I know what it means. I say it back.', 'seed', false, 1480, 6, 50, 'seed-48-birdwatching-dad'),
-('The app I built has fourteen users, and twelve of them are named Nguyen.
+  ('The app I built has fourteen users, and twelve of them are named Nguyen.
 
 My grandmother came to live with us when I was in eighth grade, speaking Vietnamese and roughly forty words of English. My parents work doubles. So her doctor''s appointments became mine to translate — a fourteen-year-old explaining blood pressure medication in a language that doesn''t have a comfortable word for "co-pay."
 
@@ -323,7 +331,7 @@ So the summer before junior year I taught myself enough React Native to be dange
 Fourteen users. My grandmother, eleven of her friends from temple, Mr. Tran''s mother, and one stranger from an app store review that made me shout in the library. I check the analytics anyway, most mornings.
 
 I''ve stopped being embarrassed by the number. Software people call this a failure to scale. But scale was never the point — precision was. Twelve elderly Vietnamese people take their medication correctly because a pharmacist in Garden Grove and a teenager with a laptop argued about the four kinds of dizzy. I want to build more things like that: small, correct, and for someone specific.', 'seed', false, 1520, 6, 47, 'seed-52-translation-app'),
-('Lifeguarding is the only job where doing it perfectly looks identical to doing nothing at all.
+  ('Lifeguarding is the only job where doing it perfectly looks identical to doing nothing at all.
 
 Four summers at Kettle Creek Pool, and I have never once performed a dramatic rescue. No whistle-sprint-dive, no grateful parents, no local news. My entire career, measured in visible heroics, rounds to zero. It took me two summers to understand that this was the achievement.
 
@@ -334,7 +342,7 @@ So I became a scholar of almost. The kid whose bounces toward the deep end were 
 I started seeing it everywhere. My friend who got quiet in a specific way in March — that was vertical and silent too, and I asked the question that a splashier friend might have missed. Nothing happened. He''s fine now. He doesn''t know he was a save, which is what makes him one.
 
 I want to study public health, the profession of nothing happening. Vaccination campaigns where the epidemic doesn''t occur; clean water systems where the outbreak never starts. Fields where success is a silence, and where somebody has to love the silence enough to keep scanning. I have four summers of practice.', 'seed', false, 1550, 6, 53, 'seed-55-lifeguard-boredom'),
-('Every Sunday at the Spin City laundromat on Fourth Street, a man named Gus sets up a chessboard on the folding table and destroys all comers, and for two years the only person in the neighborhood who could occasionally beat him was a sixteen-year-old with a garbage bag full of towels. That was me, and those games are the reason I think the way I think.
+  ('Every Sunday at the Spin City laundromat on Fourth Street, a man named Gus sets up a chessboard on the folding table and destroys all comers, and for two years the only person in the neighborhood who could occasionally beat him was a sixteen-year-old with a garbage bag full of towels. That was me, and those games are the reason I think the way I think.
 
 We wash our own towels because my mom runs a hair salon out of our kitchen — unlicensed, which I''m told colleges like honesty, so: unlicensed. Sunday is towel day. Forty towels, two machines, ninety minutes. Gus noticed me watching his board the way hungry people watch food, and he said the sentence that changed my Sundays: "You play, or you just loiter?"
 
@@ -345,7 +353,7 @@ It bled into everything, this exercise. Half my anxiety about school, it turns o
 Gus was a civil engineer in Armenia. Here he fixes furnaces, and he is the smartest person I have ever played. I asked him once if it bothered him, the difference between what he was and what the country lets him be. He rearranged the pieces and said, "Wrong fear. I am not afraid of being small. I am afraid of no one to play."
 
 Forty towels, ninety minutes, the real fear. I''m bringing all three to college.', 'seed', false, 1620, 6, 51, 'seed-62-laundromat-chess'),
-('I photograph potholes. Not artistically — forensically. Every pothole on the six streets around my house, dated, measured with a tape measure my mother thinks she lost, uploaded to a database I named, with the unearned confidence of a fifteen-year-old, the Municipal Neglect Archive.
+  ('I photograph potholes. Not artistically — forensically. Every pothole on the six streets around my house, dated, measured with a tape measure my mother thinks she lost, uploaded to a database I named, with the unearned confidence of a fifteen-year-old, the Municipal Neglect Archive.
 
 It started as spite. Our car needed a $340 control arm after the crater on Delancey ate our front-left wheel, and the city''s pothole portal — a real thing that exists — closed my report with the status "RESOLVED" while the pothole sat there, unresolved, growing, like a lie with a diameter. Something about that word did it to me. Resolved. The city had a button that made problems disappear from its own records while the asphalt stayed broken in the world.
 
@@ -354,7 +362,7 @@ So I built the counter-record. Three years, 312 potholes, each with a photo, a d
 My friends find this hilarious, and it is. But I''ve come to believe the gap I''m measuring is one of the most important quantities in civic life: the distance between what institutions record and what is true. That distance has a size. It can be measured by anyone with patience and a tape measure. And institutions behave differently when someone is measuring — Delancey Street got repaved in full last spring, three weeks after a councilwoman''s aide found my archive and asked, nervously, how long I''d been keeping it.
 
 Three years. I''ll keep it as long as the word RESOLVED keeps lying. What I want to study is really just this: who checks the record against the road, and what happens when nobody does.', 'seed', false, 1680, 6, 55, 'seed-68-pothole-archive'),
-('Being named captain of the varsity basketball team my senior year was one of the proudest moments of my life. It taught me that leadership is not about being the best player, but about lifting up everyone around you.
+  ('Being named captain of the varsity basketball team my senior year was one of the proudest moments of my life. It taught me that leadership is not about being the best player, but about lifting up everyone around you.
 
 Our season did not start well. We lost our first four games and people were starting to point fingers. As captain, I knew I had to do something. I called a team meeting and told everyone that we needed to stop blaming each other and start playing as a unit. I told them that a chain is only as strong as its weakest link, and that we would either win together or lose together.
 
@@ -363,7 +371,7 @@ Something changed after that meeting. We won our next game, and then the one aft
 Basketball has taught me so many life lessons. It taught me discipline, because you cannot get better without putting in the work every single day. It taught me time management, because balancing practice and AP classes is not easy. Most of all, it taught me that hard work pays off in the end.
 
 I plan to bring these same qualities to college. Whether or not I play basketball at the next level, I will always carry the lessons I learned on the court. I know how to lead, how to work with others, and how to push through adversity when things get tough. Those are the qualities that separate good teams from great ones, and good students from great ones.', 'seed', false, 1180, 6, 35, 'seed-18-sports-captain-cliche'),
-('My grandfather passed away during my sophomore year, and losing him changed the way I look at the world.
+  ('My grandfather passed away during my sophomore year, and losing him changed the way I look at the world.
 
 He was the kind of person who lit up a room. He had a story for every occasion, most of them exaggerated, and he told them with his hands as much as his voice. Sunday dinners at his house were the highlight of my week. He always asked about school, and he actually listened to the answer, which is rarer than it sounds.
 
@@ -374,7 +382,7 @@ Grief taught me something I did not expect: that it comes in waves, and that the
 Losing him also made me more present with the people I love. I call my grandmother every Sunday now, at the same time he used to call us. I ask her questions. I write down the answers, because I learned the hard way that stories disappear when the people holding them do.
 
 I am not the same person I was before. I am more grateful, more aware of how quickly things can change, and more determined to make the most of the time I have. My grandfather would have wanted that. Every time I accomplish something, I imagine telling him about it, and I can hear exactly what he would say.', 'seed', false, 1230, 6, 43, 'seed-23-grandparent-passing'),
-('My parents did not go to college, and for most of my life that fact sat in the middle of our kitchen table like a place setting for someone who never showed up.
+  ('My parents did not go to college, and for most of my life that fact sat in the middle of our kitchen table like a place setting for someone who never showed up.
 
 They came here from Honduras in 1999. My father frames houses; my mother cleans them. Neither of them can help me with calculus, and both of them expect me to be a doctor. That contradiction has been the shape of my adolescence — enormous expectations paired with almost no map for how to meet them.
 
@@ -385,7 +393,7 @@ What I have gotten good at is asking. It sounds small, but for a kid whose paren
 I have started passing the map along. There are eleven of us in an informal group chat now — mostly first-generation kids at my school — where we post deadlines and decode financial aid emails together. Nobody organized it. I just started adding people who looked as lost as I had been.
 
 I still cannot ask my parents for help with homework. But I can tell them what a FAFSA is, in Spanish, at the kitchen table. That is a start.', 'seed', false, 1300, 6, 46, 'seed-30-first-gen-pressure'),
-('I have been second chair viola for four years, and I have made peace with the fact that I will never be first.
+  ('I have been second chair viola for four years, and I have made peace with the fact that I will never be first.
 
 The girl who beats me every year is named Priya, and she is genuinely better. Not by a lot. By enough. For a long time this ate at me. I practiced more the summer before junior year than I had in my life — three hours a day, scales until my fingers ached — and at the fall audition I lost by two points.
 
@@ -398,7 +406,7 @@ I fixed it. Not by playing better, but by seeing better.
 I think about that a lot now. There is a kind of usefulness that only exists slightly off the top. The person in front is solving their own problem; the person just behind can see the whole section. I have become the person our conductor asks when something is not working, and that turns out to be a more interesting job than being the best player in the room.
 
 Priya is going to conservatory. I am not. I am going to study something where the view from second chair is worth having.', 'seed', false, 1340, 6, 47, 'seed-34-orchestra-second-chair'),
-('The hardest camper I ever had was a nine-year-old named Elliot who refused to swim.
+  ('The hardest camper I ever had was a nine-year-old named Elliot who refused to swim.
 
 Not afraid — refused. He would put on his suit, walk to the edge of the lake, and then stand there with his arms crossed for the entire forty-five minute period, every day, for two weeks. The other counselors tried bribery, peer pressure, and a truly ill-advised attempt at picking him up. Nothing worked, and everything made it worse.
 
@@ -411,7 +419,7 @@ That was the whole thing. Not fear of water — fear of being found out. He had 
 We worked out a deal. I taught him during free period, when the waterfront was empty, and told nobody. By the last week of camp he could make it across the shallow end. He never swam during his cabin''s period, and I never made him.
 
 I have thought about that summer more than almost anything else in high school. My instinct — everyone''s instinct — was to solve the visible problem. The visible problem was almost never the real one. I want to work with kids, and the first thing I will bring is the willingness to sit on the dock for six days.', 'seed', false, 1380, 6, 48, 'seed-38-summer-camp-counselor'),
-('My app has been rejected from the App Store four times. I want to tell you about the fourth one.
+  ('My app has been rejected from the App Store four times. I want to tell you about the fourth one.
 
 The first three were my fault in boring ways — a missing privacy policy, a crash on iPad, a screenshot at the wrong resolution. Fixable. The fourth said my app "duplicated existing functionality," which is Apple''s way of saying: this already exists and yours is not better.
 
@@ -424,7 +432,7 @@ That is not a fun problem. There is no elegant algorithm in it. It is a scheduli
 It has been running for five months. Twenty-six nurses use it. My mother says the group text has gotten noticeably quieter.
 
 I used to think being a good engineer meant being able to build anything. I am starting to think it means being willing to build the boring thing that someone actually needs. The habit tracker was better code. The shift board is better work.', 'seed', false, 1410, 6, 45, 'seed-41-coding-bootcamp-failure'),
-('In Model UN, I represented Belarus twice, and both times I lost the same argument in the same way.
+  ('In Model UN, I represented Belarus twice, and both times I lost the same argument in the same way.
 
 The committee was on refugee resettlement quotas. Belarus''s actual position is obstructionist and, frankly, indefensible — which is the point of being assigned it. Most delegates in that spot do one of two things: they abandon the position and vote their conscience, or they defend it so cynically that nobody engages with them. I did the second one. Twice. I lost both times, and I was proud of losing, which should have been my first clue that something was off.
 
@@ -437,7 +445,7 @@ What I had been doing was performing a position. What she was doing was solving 
 I have tried to carry that into everything since. In debate, in group projects, in an argument with my father about a curfew: state the other side''s constraint as if it were real, then build something that survives it. It is slower. It wins less often in rooms scored on style.
 
 But the proposals are better, and I would rather be the person who wrote a workable one than the person who was clever about why it could not be done.', 'seed', false, 1440, 6, 55, 'seed-44-model-un-competent'),
-('The Skyline Diner serves about four hundred cups of coffee between eleven at night and six in the morning, and I have poured most of them for the last two summers.
+  ('The Skyline Diner serves about four hundred cups of coffee between eleven at night and six in the morning, and I have poured most of them for the last two summers.
 
 Night shift has a population you do not otherwise meet. Nurses coming off twelve-hour rotations. Long-haul drivers doing the math on their hours. A man named Roy who comes in at 3 a.m. every Tuesday and Friday, orders wheat toast, and reads actual newspapers, plural. Kids my age at 2 a.m. who are either very happy or very sad and never anything between.
 
@@ -446,7 +454,7 @@ You learn the tells. People who are about to cry order dessert. People who have 
 The thing I did not expect is how much of the night runs on a set of rules nobody wrote down. Roy''s toast starts when his headlights hit the window. The nurses get the corner booth because it is dim and they have been under fluorescents for twelve hours. A regular who is short gets fed and squares it Thursday. None of this is policy. Some of it is technically against policy.
 
 I am going to study something like sociology or public health, and everyone assumes that means I want to fix things. Partly. But mostly I want to notice things — I have spent two summers learning that the actual system in a place is almost never the one written on the wall, and that you can only find the real one by being there at 3 a.m. when it is running.', 'seed', false, 1470, 6, 49, 'seed-47-diner-night-shift'),
-('My science fair project failed to reject the null hypothesis, and my teacher told me to change the data.
+  ('My science fair project failed to reject the null hypothesis, and my teacher told me to change the data.
 
 Not in those words. What Mr. Keller said was, "You might want to rerun the trials that look like outliers." He said it kindly. He said it the week before the regional deadline, looking at a spreadsheet where my hypothesis — that a particular soil amendment would increase seedling growth — had produced, across ninety-six pots, a difference of essentially nothing.
 
@@ -459,7 +467,7 @@ So I presented a null result. I made the graph of nothing. I explained the effec
 Here is the part that has stayed with me: two judges came back afterward. One of them, a soil scientist at the state extension office, asked for my raw data because — she said — the amendment I tested is marketed pretty aggressively to home gardeners on essentially no evidence, and negative results on it are hard to find.
 
 Nobody in my school remembers that project. It is the only thing I have ever made that a professional wanted.', 'seed', false, 1500, 6, 51, 'seed-50-science-fair-negative-result'),
-('There are 1,412 pipes in the organ at St. Bartholomew''s and I have had my hands inside roughly six hundred of them.
+  ('There are 1,412 pipes in the organ at St. Bartholomew''s and I have had my hands inside roughly six hundred of them.
 
 The organ was built in 1911 and has been dying, very slowly, since about 1987. The parish cannot afford a professional restoration, which runs to six figures. What it has instead is Mr. Vance, who is eighty-one and was an HVAC technician for forty years, and me, who is seventeen and was bored.
 
@@ -470,7 +478,7 @@ We releather pallets. That is most of what we do. You steam the old leather off,
 What I did not anticipate is what this does to listening. I cannot hear the organ as sound anymore. During the processional I hear the 8-foot Principal on the Great, and I know that the slight delay on middle C is a pallet we have not gotten to. The congregation hears music. I hear a specific piece of leather I am going to have to replace in August.
 
 I am not sure whether this is a loss. Something opaque became transparent to me, and now I cannot go back. I want to spend my life doing that to more things — taking the beautiful thing apart until it becomes a mechanism, and finding out that the mechanism is beautiful too.', 'seed', false, 1530, 6, 52, 'seed-53-church-organ-repair'),
-('I have been present for four deaths, and in three of them nobody was talking.
+  ('I have been present for four deaths, and in three of them nobody was talking.
 
 I volunteer at a hospice, which is an odd thing for a sixteen-year-old to do and I did not choose it for good reasons — it was the only volunteer slot left that fit around my job. The training is eleven hours. Most of it is about what not to do. Do not say "I know how you feel." Do not fill silence. Do not, under any circumstances, promise anyone anything about what happens next.
 
@@ -481,7 +489,7 @@ The one death where somebody was talking was a woman named Ruth, who at the very
 I used to think there would be a summation. Some final compression of a life into a sentence. There is almost never a summation. There is a person who is tired, and small ordinary concerns that stay small and ordinary right up to the edge, and someone in a chair.
 
 I am going into medicine, and I already know the thing I will be worst at is the thing I am practicing now: staying in the room when there is nothing to do in it.', 'seed', false, 1580, 6, 54, 'seed-58-hospice-volunteer'),
-('I have ridden the 47 bus 1,900 times and I have never once been on it for transportation.
+  ('I have ridden the 47 bus 1,900 times and I have never once been on it for transportation.
 
 Let me explain that. My family moved to this city when I was eleven, into an apartment where I was alone from 3 p.m. until my mother got home at 9. I was not allowed to have people over. I was not allowed to be outside after dark. What I was allowed to do, because it had not occurred to anyone to forbid it, was ride the bus.
 
@@ -494,7 +502,7 @@ Here is what I did with it. Sophomore year our city put out a draft plan to cut 
 I went. I brought a rider count I had done myself, by hand, for six weeks. I was the only person under sixty who spoke.
 
 They cut it anyway. I want to study transportation policy, and it is not because I think I will win those meetings. It is because I have noticed that the people who show up to them have almost never been on the bus.', 'seed', false, 1650, 6, 53, 'seed-65-bus-route-map'),
-('When I was twelve I corrected my mother''s English in front of a cashier, and she did not speak to me for the rest of the day.
+  ('When I was twelve I corrected my mother''s English in front of a cashier, and she did not speak to me for the rest of the day.
 
 She had said "borrow me the pen." The cashier had understood her perfectly. I said, "Lend. It''s lend me the pen," in the voice of a child who has just discovered he possesses something his parent does not, and I watched her face do something I had never seen it do, which was close.
 
@@ -509,7 +517,7 @@ I have never apologized for it directly, which is a thing I am admitting here fo
 I do it in her name. I say "I''m calling on behalf of Marisol Ferreira," and I make them spell it back to me.
 
 That is not an apology. I know that. It is a tax I have decided to pay for a long time.', 'seed', false, 1710, 6, 57, 'seed-71-mothers-accent'),
-('My mother''s appointment book is written in three alphabets, and I am the only person alive who can read all of it.
+  ('My mother''s appointment book is written in three alphabets, and I am the only person alive who can read all of it.
 
 Khmer script for the regulars she trusts. English for the walk-ins. And for a certain kind of customer, a private shorthand she invented in the refugee camp in Khao-I-Dang — a system of dots and slashes that her sister devised so they could keep lists the guards couldn''t read. My mother is fifty-one now and owns a nail salon in a strip mall in Lowell, and she still records certain things in camp code. It took me until I was fourteen to notice which things.
 
@@ -519,4 +527,5 @@ So the kindness is encrypted. That is the exact shape of my mother: a woman who 
 
 I keep her books now — the tax ones, in English, in QuickBooks. The other ledger she keeps herself. But she''s been teaching me the code, dot by slash, the way other families hand down recipes. Last month she let me make my first entry: two dots for a nursing student whose card declined. My handwriting in her alphabet.
 
-People ask what I want to do, and I say something about economics, which is true but incomplete. What I actually want is to spend my life the way that book spends its ink: precise in public, generous in code, keeping accounts the guards can''t read.', 'seed', false, 1750, 6, 58, 'seed-75-nail-salon-ledger');
+People ask what I want to do, and I say something about economics, which is true but incomplete. What I actually want is to spend my life the way that book spends its ink: precise in public, generous in code, keeping accounts the guards can''t read.', 'seed', false, 1750, 6, 58, 'seed-75-nail-salon-ledger')
+on conflict (label) do nothing;

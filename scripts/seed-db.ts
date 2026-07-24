@@ -16,10 +16,13 @@ async function main() {
   }
   const db = createClient(url, key, { auth: { persistSession: false } });
 
-  const del = await db.from("corpus_essays").delete().in("source", ["anchor", "seed"]);
-  if (del.error) throw new Error(del.error.message);
+  // Additive: `matches` holds a foreign key to `corpus_essays`, so deleting
+  // seeded rows would fail (or destroy evaluation history). Skip labels that
+  // already exist — they keep the ratings they've accreted from real matches.
+  const { data: existing } = await db.from("corpus_essays").select("label");
+  const have = new Set((existing ?? []).map((r) => r.label as string));
 
-  const rows = SEED_CORPUS.map((e) => ({
+  const rows = SEED_CORPUS.filter((e) => !have.has(e.label)).map((e) => ({
     content: e.content,
     source: e.source,
     locked: e.source === "anchor",
@@ -28,10 +31,14 @@ async function main() {
     prose_score: e.prose,
     label: e.label,
   }));
-  const ins = await db.from("corpus_essays").insert(rows);
-  if (ins.error) throw new Error(ins.error.message);
+  if (rows.length > 0) {
+    const ins = await db.from("corpus_essays").insert(rows);
+    if (ins.error) throw new Error(ins.error.message);
+  }
 
-  console.log(`Seeded ${rows.length} corpus essays (${rows.filter((r) => r.locked).length} locked anchors).`);
+  console.log(
+    `Added ${rows.length} corpus essays (${have.size} already present, left untouched).`
+  );
 }
 
 main().catch((e) => {
