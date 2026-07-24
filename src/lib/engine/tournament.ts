@@ -28,6 +28,8 @@ export interface StepResult {
   matches_done: number;
   budget: number;
   busy?: boolean;
+  /** On a failed evaluation, the stored error message (for debugging). */
+  error?: string | null;
 }
 
 /** Atomically claim the evaluation for one step. Returns null if locked. */
@@ -89,8 +91,18 @@ export async function stepEvaluation(
         return pick(ev);
     }
   } catch (e) {
-    await fail(db, evalId, e instanceof Error ? e.message : "step failed");
-    throw e;
+    const msg = e instanceof Error ? e.message : "step failed";
+    const tagged = `[phase=${ev.phase} matches=${ev.matches_done}] ${msg}`;
+    console.error("stepEvaluation failed", { evalId, phase: ev.phase, error: tagged });
+    await fail(db, evalId, tagged);
+    // Return the failure as data (not a 500) so the client can display it.
+    return {
+      status: "failed",
+      phase: ev.phase,
+      matches_done: ev.matches_done,
+      budget: ev.budget,
+      error: tagged,
+    };
   }
 }
 
@@ -100,6 +112,7 @@ function pick(ev: Evaluation): StepResult {
     phase: ev.phase,
     matches_done: ev.matches_done,
     budget: ev.budget,
+    error: ev.error,
   };
 }
 

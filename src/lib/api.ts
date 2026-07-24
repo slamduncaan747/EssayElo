@@ -69,12 +69,8 @@ export function handleApiError(e: unknown): NextResponse {
     );
   }
   console.error(e);
-  // Set EXPOSE_ERRORS=1 in the environment to surface the real message while
-  // debugging a deployment. Leave unset in normal operation.
-  const detail =
-    process.env.EXPOSE_ERRORS === "1" && e instanceof Error ? e.message : undefined;
-  return NextResponse.json(
-    { error: "Something went wrong", ...(detail ? { detail } : {}) },
-    { status: 500 }
-  );
+  // TEMP DEBUG: always surface the real message while stabilizing the
+  // deployment. Tighten this (gate behind EXPOSE_ERRORS) before real launch.
+  const detail = e instanceof Error ? e.message : String(e);
+  return NextResponse.json({ error: "Something went wrong", detail }, { status: 500 });
 }

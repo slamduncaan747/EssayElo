@@ -10,6 +10,12 @@ interface StepState {
   matches_done: number;
   budget: number;
   busy?: boolean;
+  error?: string | null;
+  detail?: string;
+}
+
+function ts(): string {
+  return new Date().toLocaleTimeString("en-US", { hour12: false });
 }
 
 const PHASE_LABEL: Record<string, string> = {
@@ -41,33 +47,71 @@ export default function EvaluatingView({
   const router = useRouter();
   const [state, setState] = useState<StepState>(initial);
   const [failed, setFailed] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [log, setLog] = useState<string[]>([]);
   const running = useRef(false);
+
+  const addLog = useCallback((line: string) => {
+    setLog((l) => [...l.slice(-40), `${ts()}  ${line}`]);
+  }, []);
 
   const drive = useCallback(async () => {
     if (running.current) return;
     running.current = true;
+    addLog(`start · phase=${initial.phase} matches=${initial.matches_done}/${initial.budget}`);
     let errors = 0;
     let current: StepState = initial;
     while (current.status === "running") {
+      const t0 = Date.now();
       try {
         const res = await fetch(`/api/evaluations/${evaluationId}/step`, { method: "POST" });
-        if (!res.ok) throw new Error(String(res.status));
-        current = (await res.json()) as StepState;
+        const body = (await res.json().catch(() => ({}))) as StepState;
+        const ms = Date.now() - t0;
+        if (!res.ok) {
+          // Non-step error (auth, ownership, unexpected). Body may carry detail.
+          const detail = body.detail || body.error || `HTTP ${res.status}`;
+          addLog(`✗ HTTP ${res.status} (${ms}ms): ${detail}`);
+          errors++;
+          if (errors >= 4) {
+            setErrorMsg(detail);
+            setFailed(true);
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 1500 * errors));
+          continue;
+        }
+        current = body;
         errors = 0;
         setState(current);
-        if (current.busy) await new Promise((r) => setTimeout(r, 2500));
-      } catch {
+        if (current.status === "failed") {
+          addLog(`✗ failed (${ms}ms): ${current.error ?? "unknown"}`);
+        } else if (current.busy) {
+          addLog(`… busy, another worker holds the lock (${ms}ms)`);
+          await new Promise((r) => setTimeout(r, 2500));
+        } else {
+          addLog(`✓ phase=${current.phase} matches=${current.matches_done}/${current.budget} (${ms}ms)`);
+        }
+      } catch (e) {
+        const detail = e instanceof Error ? e.message : "network error";
+        addLog(`✗ exception: ${detail}`);
         errors++;
         if (errors >= 4) {
+          setErrorMsg(detail);
           setFailed(true);
           break;
         }
-        await new Promise((r) => setTimeout(r, 2000 * errors));
+        await new Promise((r) => setTimeout(r, 1500 * errors));
       }
     }
-    if (current.status === "done") router.refresh();
-    if (current.status === "failed") setFailed(true);
-  }, [evaluationId, initial, router]);
+    if (current.status === "done") {
+      addLog("✓ done — loading results");
+      router.refresh();
+    }
+    if (current.status === "failed") {
+      setErrorMsg(current.error ?? "The evaluation failed.");
+      setFailed(true);
+    }
+  }, [evaluationId, initial, router, addLog]);
 
   useEffect(() => {
     void drive();
@@ -118,15 +162,32 @@ export default function EvaluatingView({
           </div>
 
           {failed ? (
-            <div style={{ font: "400 12.5px/1.6 var(--sans)", color: "rgba(245,241,233,.7)" }}>
-              The evaluation hit an error. Your evaluation was not counted —{" "}
-              <button
-                onClick={() => location.reload()}
-                style={{ color: "var(--gold)", textDecoration: "underline" }}
-              >
-                try again
-              </button>
-              .
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ font: "400 12.5px/1.6 var(--sans)", color: "rgba(245,241,233,.7)" }}>
+                The evaluation hit an error (not counted against your limit) —{" "}
+                <button
+                  onClick={() => location.reload()}
+                  style={{ color: "var(--gold)", textDecoration: "underline" }}
+                >
+                  try again
+                </button>
+                .
+              </div>
+              {errorMsg ? (
+                <div
+                  style={{
+                    background: "rgba(163,75,50,.18)",
+                    border: "1px solid rgba(163,75,50,.5)",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    font: "400 11.5px/1.5 var(--mono)",
+                    color: "#e8b7a6",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {errorMsg}
+                </div>
+              ) : null}
             </div>
           ) : (
             <>
@@ -177,6 +238,48 @@ export default function EvaluatingView({
               </div>
             </>
           )}
+
+          {/* TEMP DEBUG: live step log. Remove with /api/diag once healthy. */}
+          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 6 }}>
+            <span className="mono-label" style={{ letterSpacing: ".12em" }}>
+              STEP LOG
+            </span>
+            <div
+              style={{
+                background: "rgba(0,0,0,.28)",
+                borderRadius: 10,
+                padding: "10px 12px",
+                maxHeight: 200,
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: 3,
+              }}
+            >
+              {log.length === 0 ? (
+                <span style={{ font: "400 11px var(--mono)", color: "rgba(245,241,233,.4)" }}>
+                  waiting…
+                </span>
+              ) : (
+                log.map((line, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      font: "400 10.5px/1.45 var(--mono)",
+                      color: line.includes("✗")
+                        ? "#e8b7a6"
+                        : line.includes("✓")
+                          ? "rgba(201,162,90,.9)"
+                          : "rgba(245,241,233,.6)",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {line}
+                  </span>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
