@@ -119,11 +119,13 @@ async function openAiCompatCall<T>(opts: StructuredCallOpts): Promise<T> {
       ],
     });
 
-  // Retry rate limits (429) and transient server errors with backoff. Free
-  // tiers throttle aggressively; an evaluation makes ~21 calls in a burst.
-  // Bounded so one call's total retry time (~1.5+3+6+12 ≈ 22s) stays well
-  // under the serverless function limit even when fully throttled.
-  const MAX_ATTEMPTS = 5;
+  // Retry rate limits (429) and transient server errors, waiting out the
+  // provider's stated retry window (header or message). Free tiers cap tokens-
+  // per-minute, so a busy evaluation legitimately has to pause ~10s between
+  // calls. Capped at 45s so a single call still finishes within the function
+  // limit — run with JUDGE_SINGLE_READING=1 on token-limited tiers so each
+  // step is one call rather than two.
+  const MAX_ATTEMPTS = 7;
   let res!: Response;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     res = await fetch(`${base.replace(/\/$/, "")}/chat/completions`, {
@@ -142,12 +144,8 @@ async function openAiCompatCall<T>(opts: StructuredCallOpts): Promise<T> {
     if (!retryable || attempt === MAX_ATTEMPTS) {
       throw new Error(`LLM request failed (${res.status}): ${detail.slice(0, 300)}`);
     }
-    const retryAfter = Number(res.headers.get("retry-after"));
-    const wait =
-      retryAfter > 0
-        ? Math.min(retryAfter * 1000, 15000)
-        : Math.min(1500 * 2 ** (attempt - 1), 12000);
-    await new Promise((r) => setTimeout(r, wait + Math.random() * 400));
+    const wait = retryWaitMs(res, detail, attempt);
+    await new Promise((r) => setTimeout(r, wait));
   }
 
   const data = (await res.json()) as {
@@ -156,6 +154,22 @@ async function openAiCompatCall<T>(opts: StructuredCallOpts): Promise<T> {
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error("Empty model response");
   return JSON.parse(stripFence(content)) as T;
+}
+
+/**
+ * How long to wait before a retry. Prefer the provider's own signal: the
+ * `retry-after` header, or a "try again in 8.39s" phrase in the body (Groq).
+ * Falls back to exponential backoff. Capped at 45s.
+ */
+function retryWaitMs(res: Response, body: string, attempt: number): number {
+  const header = Number(res.headers.get("retry-after"));
+  let seconds = header > 0 ? header : 0;
+  if (!seconds) {
+    const m = body.match(/try again in ([\d.]+)\s*s/i);
+    if (m) seconds = parseFloat(m[1]);
+  }
+  const ms = seconds > 0 ? seconds * 1000 : 1500 * 2 ** (attempt - 1);
+  return Math.min(ms, 45000) + Math.random() * 500;
 }
 
 /** Some providers still wrap JSON in a ```json fence even in JSON mode. */

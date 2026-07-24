@@ -67,6 +67,22 @@ export function resolveSwapPair(a: SingleVerdict, b: SingleVerdict): ResolvedMat
   };
 }
 
+/**
+ * Resolve a single (non-swapped) reading. No split detection is possible, so
+ * reliability comes only from the reason-axis audit and, downstream, from
+ * cross-match intransitivity.
+ */
+export function resolveSingle(v: SingleVerdict): ResolvedMatch {
+  const offAxis = auditAxis(v.harvest);
+  return {
+    winner: v.userWon ? "user" : "opponent",
+    margin: v.margin,
+    weight: offAxis ? OFF_AXIS_WEIGHT : 1,
+    offAxis,
+    harvest: v.harvest,
+  };
+}
+
 export interface MatchOutcomeLite {
   winner: MatchWinner;
   oppElo: number;

@@ -118,6 +118,19 @@ export async function judgeMatchPair(
   ]);
 }
 
+/**
+ * A single reading with a randomized presentation order — used when
+ * JUDGE_SINGLE_READING=1 (e.g. token-limited free tiers). Position bias is
+ * averaged out across matches by the per-match coin flip rather than by
+ * running each match twice.
+ */
+export async function judgeSingle(
+  userEssay: string,
+  oppEssay: string
+): Promise<SingleVerdict> {
+  return judgeOnce(userEssay, oppEssay, Math.random() < 0.5);
+}
+
 export async function judgeProse(
   essay: string
 ): Promise<{ prose_score: number; note: string }> {

@@ -15,8 +15,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Evaluation, Harvest, MatchWinner, Margin, ProseTag } from "@/lib/types";
 import { corpusEloUpdate, eloUpdate } from "./elo";
 import { pickOpponent, type Opponent } from "./matchmaker";
-import { intransitivityRate, resolveSwapPair } from "./reliability";
-import { judgeMatchPair, judgePlacement, judgeProse } from "./judge";
+import { intransitivityRate, resolveSingle, resolveSwapPair } from "./reliability";
+import { judgeMatchPair, judgePlacement, judgeProse, judgeSingle } from "./judge";
 import { synthesize, type HarvestedMatch } from "./assemble";
 import { ciElo, tierToElo, eloToScore } from "./scale";
 
@@ -177,9 +177,16 @@ async function stepMatch(db: SupabaseClient, ev: Evaluation): Promise<StepResult
     .single();
   if (!oppContent) throw new Error("opponent content missing");
 
-  // Order-swap stability: two readings, presentation reversed.
-  const [v1, v2] = await judgeMatchPair(essay, oppContent.content as string);
-  const resolved = resolveSwapPair(v1, v2);
+  // Order-swap stability: two readings, presentation reversed. On token-
+  // limited free tiers, JUDGE_SINGLE_READING=1 halves the load (one reading,
+  // randomized order) at the cost of the per-match flip check.
+  let resolved;
+  if (process.env.JUDGE_SINGLE_READING === "1") {
+    resolved = resolveSingle(await judgeSingle(essay, oppContent.content as string));
+  } else {
+    const [v1, v2] = await judgeMatchPair(essay, oppContent.content as string);
+    resolved = resolveSwapPair(v1, v2);
+  }
 
   const eloBefore = ev.elo!;
   let eloAfter = eloBefore;
