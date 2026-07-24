@@ -6,7 +6,7 @@
  */
 
 import type { EssayMark, Harvest, MatchWinner, SynthesisResult } from "@/lib/types";
-import { MOCK_JUDGE, SYNTH_MODEL, structuredCall } from "@/lib/anthropic";
+import { isMock, synthModel, structuredCall } from "@/lib/anthropic";
 import {
   SYNTHESIS_SCHEMA,
   SYNTHESIS_SYSTEM,
@@ -106,7 +106,7 @@ export async function synthesize(opts: {
   const paras = paragraphsOf(opts.essay);
 
   let raw: RawSynthesis;
-  if (MOCK_JUDGE) {
+  if (isMock()) {
     raw = mockSynthesis(opts.essay, opts.score);
   } else {
     const evidence: SynthesisEvidence = {
@@ -123,7 +123,7 @@ export async function synthesize(opts: {
       paragraphCount: paras.length,
     };
     raw = await structuredCall<RawSynthesis>({
-      model: SYNTH_MODEL,
+      model: synthModel(),
       system: SYNTHESIS_SYSTEM,
       user: synthesisUser(opts.essay, evidence),
       schema: SYNTHESIS_SCHEMA as unknown as Record<string, unknown>,

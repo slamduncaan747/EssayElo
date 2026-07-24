@@ -16,29 +16,25 @@ import Anthropic from "@anthropic-ai/sdk";
  *   LLM_MODEL_JUDGE=llama-3.3-70b-versatile
  */
 
-export const PROVIDER = (process.env.LLM_PROVIDER || "anthropic").toLowerCase();
-
-const DEFAULT_MODEL =
-  PROVIDER === "anthropic" ? "claude-opus-4-8" : "llama-3.3-70b-versatile";
-
-/**
- * Judge runs 2×(10–25) calls per evaluation, so the judge model is the main
- * cost/latency lever. Legacy ANTHROPIC_MODEL_* names still work.
- */
-export const JUDGE_MODEL =
-  process.env.LLM_MODEL_JUDGE || process.env.ANTHROPIC_MODEL_JUDGE || DEFAULT_MODEL;
-export const SYNTH_MODEL =
-  process.env.LLM_MODEL_SYNTH || process.env.ANTHROPIC_MODEL_SYNTH || DEFAULT_MODEL;
+export { PROVIDER } from "./anthropic-provider";
+import { PROVIDER } from "./anthropic-provider";
+import { engine } from "./engine/config";
 
 /**
- * Model for the two simple calls — placement (a 3-way triage) and prose (one
- * score). Neither needs the judging model's capability. Pointing this at a
- * smaller model saves the judge's quota and, on providers that meter per
- * model, spreads load across separate buckets. Defaults to the judge model.
+ * Model selection reads the request-scoped engine config (see engine/config),
+ * which falls back to the environment. Functions rather than constants so a
+ * per-request override can switch models without a redeploy.
  */
-export const CHEAP_MODEL = process.env.LLM_MODEL_CHEAP || JUDGE_MODEL;
-
-export const MOCK_JUDGE = process.env.MOCK_JUDGE === "1";
+export const judgeModel = () => engine().judgeModel;
+export const synthModel = () => engine().synthModel;
+/**
+ * Placement (a 3-way triage) and prose (one score) don't need the judging
+ * model. Pointing this at a smaller model saves the judge's quota and, on
+ * providers that meter per model, draws from a separate bucket.
+ */
+export const cheapModel = () => engine().cheapModel;
+/** Deterministic mock judge — exercises the whole pipeline with no API. */
+export const isMock = () => engine().mock;
 
 let _anthropic: Anthropic | null = null;
 function anthropic(): Anthropic {

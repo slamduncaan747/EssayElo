@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { JUDGE_MODEL, PROVIDER, structuredCall } from "@/lib/anthropic";
+import { judgeModel, PROVIDER, structuredCall } from "@/lib/anthropic";
 import { judgeMatchPair } from "@/lib/engine/judge";
 
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ export const maxDuration = 60;
 export async function GET() {
   const out: Record<string, unknown> = {
     provider: PROVIDER,
-    judgeModel: JUDGE_MODEL,
+    judgeModel: judgeModel(),
     env: {
       LLM_PROVIDER: process.env.LLM_PROVIDER ?? "(unset → defaults to anthropic)",
       LLM_BASE_URL: process.env.LLM_BASE_URL ?? "(unset)",
@@ -51,7 +51,7 @@ export async function GET() {
   const started = Date.now();
   try {
     const r = await structuredCall<{ tier: number }>({
-      model: JUDGE_MODEL,
+      model: judgeModel(),
       system: "You triage essays. Return JSON.",
       user: 'Return {"tier": 4}.',
       schema: {

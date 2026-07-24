@@ -5,7 +5,7 @@
  */
 
 import type { Harvest, Margin } from "@/lib/types";
-import { CHEAP_MODEL, JUDGE_MODEL, MOCK_JUDGE, structuredCall } from "@/lib/anthropic";
+import { cheapModel, isMock, judgeModel, structuredCall } from "@/lib/anthropic";
 import {
   COMPARE_BATCH_HINT,
   COMPARE_BATCH_SCHEMA,
@@ -44,9 +44,9 @@ interface CompareOutput {
 }
 
 export async function judgePlacement(essay: string): Promise<number> {
-  if (MOCK_JUDGE) return mockPlacement(essay).tier;
+  if (isMock()) return mockPlacement(essay).tier;
   const out = await structuredCall<{ tier: number }>({
-    model: CHEAP_MODEL,
+    model: cheapModel(),
     system: PLACEMENT_SYSTEM,
     user: placementUser(essay),
     schema: PLACEMENT_SCHEMA as unknown as Record<string, unknown>,
@@ -68,7 +68,7 @@ async function judgeOnce(
   const essayB = userIsA ? oppEssay : userEssay;
 
   let out: CompareOutput;
-  if (MOCK_JUDGE) {
+  if (isMock()) {
     const m = mockCompare(essayA, essayB);
     const userSide: "A" | "B" = userIsA ? "A" : "B";
     const userWon = m.winner === userSide;
@@ -76,7 +76,7 @@ async function judgeOnce(
   }
 
   out = await structuredCall<CompareOutput>({
-    model: JUDGE_MODEL,
+    model: judgeModel(),
     system: COMPARE_SYSTEM,
     user: compareUser(essayA, essayB),
     schema: COMPARE_SCHEMA as unknown as Record<string, unknown>,
@@ -175,7 +175,7 @@ export async function judgeBatch(
 ): Promise<BatchVerdict[]> {
   if (opponents.length === 0) return [];
 
-  if (MOCK_JUDGE) {
+  if (isMock()) {
     return opponents.map((opp, i) => {
       const m = mockCompare(userEssay, opp);
       const userWon = m.winner === "A";
@@ -187,7 +187,7 @@ export async function judgeBatch(
   }
 
   const out = await structuredCall<BatchOutput>({
-    model: JUDGE_MODEL,
+    model: judgeModel(),
     system: COMPARE_BATCH_SYSTEM,
     user: compareBatchUser(userEssay, opponents),
     schema: COMPARE_BATCH_SCHEMA as unknown as Record<string, unknown>,
@@ -236,9 +236,9 @@ export async function judgeBatch(
 export async function judgeProse(
   essay: string
 ): Promise<{ prose_score: number; note: string }> {
-  if (MOCK_JUDGE) return mockProse(essay);
+  if (isMock()) return mockProse(essay);
   return structuredCall<{ prose_score: number; note: string }>({
-    model: CHEAP_MODEL,
+    model: cheapModel(),
     system: PROSE_SYSTEM,
     user: proseUser(essay),
     schema: PROSE_SCHEMA as unknown as Record<string, unknown>,

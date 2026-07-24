@@ -1,18 +1,29 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/data";
-import PlanToggle from "@/components/PlanToggle";
+import DevBar from "@/components/DevBar";
+import { ENGINE_COOKIE, envConfig, isPreset } from "@/lib/engine/config";
 
 /**
  * Route group for the signed-in app. Auth is enforced in middleware; this
- * layout just guarantees a profile exists for children via context-free
- * re-fetching (each page loads what it needs — pages are cheap RLS reads).
+ * layout guarantees a profile exists and mounts the testing controls.
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const profile = await getProfile();
   if (!profile) redirect("/login");
+
+  const devTools = process.env.ALLOW_PLAN_TOGGLE === "1";
+  let preset = envConfig().mock ? "mock" : "quality";
+  if (devTools) {
+    const c = (await cookies()).get(ENGINE_COOKIE)?.value;
+    if (isPreset(c)) preset = c;
+  }
+
   return (
     <>
-      {process.env.ALLOW_PLAN_TOGGLE === "1" ? <PlanToggle plan={profile.plan} /> : null}
+      {devTools ? (
+        <DevBar plan={profile.plan} preset={preset as "mock" | "fast" | "quality"} />
+      ) : null}
       {children}
     </>
   );
