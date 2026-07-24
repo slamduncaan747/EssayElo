@@ -188,7 +188,22 @@ async function stepMatch(db: SupabaseClient, ev: Evaluation): Promise<StepResult
     used.add(next.id);
     chosen.push(next);
   }
-  if (chosen.length === 0) throw new Error("no opponents available");
+
+  // The corpus can be smaller than the match budget. Rematching an opponent
+  // would add no information (the judge is deterministic at temperature 0) and
+  // would falsely tighten the confidence interval, so instead we end the match
+  // phase early and record the budget we could actually honour.
+  if (chosen.length === 0) {
+    if (ev.matches_done === 0) throw new Error("no opponents available");
+    const nextPhase = ev.kind === "full" ? "prose" : "synthesis";
+    await release(db, ev.id, { budget: ev.matches_done, phase: nextPhase });
+    return {
+      status: "running",
+      phase: nextPhase,
+      matches_done: ev.matches_done,
+      budget: ev.matches_done,
+    };
+  }
 
   const { data: oppRows } = await db
     .from("corpus_essays")

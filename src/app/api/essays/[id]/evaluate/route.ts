@@ -4,7 +4,7 @@ import { ApiError, isUuid } from "@/lib/validate";
 import {
   assertFullEvalAllowed,
   assertNoRunningEvaluation,
-  TIER,
+  matchBudgetFor,
 } from "@/lib/quota";
 
 export const runtime = "nodejs";
@@ -38,7 +38,7 @@ export async function POST(
         draft_id: draft.id,
         user_id: ctx.user.id,
         kind: "full",
-        budget: TIER[ctx.plan].matchBudget,
+        budget: await matchBudgetFor(ctx.db, ctx.plan),
       })
       .select("id")
       .single();

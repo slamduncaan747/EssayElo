@@ -354,6 +354,161 @@ So I built the counter-record. Three years, 312 potholes, each with a photo, a d
 My friends find this hilarious, and it is. But I''ve come to believe the gap I''m measuring is one of the most important quantities in civic life: the distance between what institutions record and what is true. That distance has a size. It can be measured by anyone with patience and a tape measure. And institutions behave differently when someone is measuring — Delancey Street got repaved in full last spring, three weeks after a councilwoman''s aide found my archive and asked, nervously, how long I''d been keeping it.
 
 Three years. I''ll keep it as long as the word RESOLVED keeps lying. What I want to study is really just this: who checks the record against the road, and what happens when nobody does.', 'seed', false, 1680, 6, 55, 'seed-68-pothole-archive'),
+('Being named captain of the varsity basketball team my senior year was one of the proudest moments of my life. It taught me that leadership is not about being the best player, but about lifting up everyone around you.
+
+Our season did not start well. We lost our first four games and people were starting to point fingers. As captain, I knew I had to do something. I called a team meeting and told everyone that we needed to stop blaming each other and start playing as a unit. I told them that a chain is only as strong as its weakest link, and that we would either win together or lose together.
+
+Something changed after that meeting. We won our next game, and then the one after that. By the end of the season we had made it to the district semifinals, which nobody expected from us. We lost that game, but I have never been prouder of a group of people.
+
+Basketball has taught me so many life lessons. It taught me discipline, because you cannot get better without putting in the work every single day. It taught me time management, because balancing practice and AP classes is not easy. Most of all, it taught me that hard work pays off in the end.
+
+I plan to bring these same qualities to college. Whether or not I play basketball at the next level, I will always carry the lessons I learned on the court. I know how to lead, how to work with others, and how to push through adversity when things get tough. Those are the qualities that separate good teams from great ones, and good students from great ones.', 'seed', false, 1180, 6, 35, 'seed-18-sports-captain-cliche'),
+('My grandfather passed away during my sophomore year, and losing him changed the way I look at the world.
+
+He was the kind of person who lit up a room. He had a story for every occasion, most of them exaggerated, and he told them with his hands as much as his voice. Sunday dinners at his house were the highlight of my week. He always asked about school, and he actually listened to the answer, which is rarer than it sounds.
+
+When he got sick, everything happened faster than we expected. Within three months he was gone. I remember sitting in the hospital room the last time, not knowing what to say, wishing I had asked him more questions when there was still time.
+
+Grief taught me something I did not expect: that it comes in waves, and that the waves get further apart but never really stop. I found myself crying in the car over a song he liked, months later. I learned to let that happen instead of pushing it down.
+
+Losing him also made me more present with the people I love. I call my grandmother every Sunday now, at the same time he used to call us. I ask her questions. I write down the answers, because I learned the hard way that stories disappear when the people holding them do.
+
+I am not the same person I was before. I am more grateful, more aware of how quickly things can change, and more determined to make the most of the time I have. My grandfather would have wanted that. Every time I accomplish something, I imagine telling him about it, and I can hear exactly what he would say.', 'seed', false, 1230, 6, 43, 'seed-23-grandparent-passing'),
+('My parents did not go to college, and for most of my life that fact sat in the middle of our kitchen table like a place setting for someone who never showed up.
+
+They came here from Honduras in 1999. My father frames houses; my mother cleans them. Neither of them can help me with calculus, and both of them expect me to be a doctor. That contradiction has been the shape of my adolescence — enormous expectations paired with almost no map for how to meet them.
+
+I filled in the map myself, badly at first. I did not know what a GPA was until ninth grade. I did not know you were supposed to take the SAT more than once. I found out about AP classes from a friend''s older sister, three weeks after registration closed, and spent a week convincing my counselor to let me in late.
+
+What I have gotten good at is asking. It sounds small, but for a kid whose parents taught him never to be a bother, asking is the hardest skill I have ever learned. I ask teachers what I missed. I ask upperclassmen what they wish they had known. I asked a stranger at a college fair to explain what "need-blind" meant, and then made him explain it twice.
+
+I have started passing the map along. There are eleven of us in an informal group chat now — mostly first-generation kids at my school — where we post deadlines and decode financial aid emails together. Nobody organized it. I just started adding people who looked as lost as I had been.
+
+I still cannot ask my parents for help with homework. But I can tell them what a FAFSA is, in Spanish, at the kitchen table. That is a start.', 'seed', false, 1300, 6, 46, 'seed-30-first-gen-pressure'),
+('I have been second chair viola for four years, and I have made peace with the fact that I will never be first.
+
+The girl who beats me every year is named Priya, and she is genuinely better. Not by a lot. By enough. For a long time this ate at me. I practiced more the summer before junior year than I had in my life — three hours a day, scales until my fingers ached — and at the fall audition I lost by two points.
+
+That night I did something I am not proud of: I considered quitting. Not because I hated viola, but because I could not see the point of being permanently second.
+
+What changed my mind was a rehearsal three weeks later. We were working through Dvořák, and the section had a passage that kept falling apart. Priya could play it perfectly, which meant she could not hear why the rest of us could not. I could. I was close enough to the problem to diagnose it — a bowing change nobody had marked — and far enough from the front to notice that four of us were doing it differently.
+
+I fixed it. Not by playing better, but by seeing better.
+
+I think about that a lot now. There is a kind of usefulness that only exists slightly off the top. The person in front is solving their own problem; the person just behind can see the whole section. I have become the person our conductor asks when something is not working, and that turns out to be a more interesting job than being the best player in the room.
+
+Priya is going to conservatory. I am not. I am going to study something where the view from second chair is worth having.', 'seed', false, 1340, 6, 47, 'seed-34-orchestra-second-chair'),
+('The hardest camper I ever had was a nine-year-old named Elliot who refused to swim.
+
+Not afraid — refused. He would put on his suit, walk to the edge of the lake, and then stand there with his arms crossed for the entire forty-five minute period, every day, for two weeks. The other counselors tried bribery, peer pressure, and a truly ill-advised attempt at picking him up. Nothing worked, and everything made it worse.
+
+I tried something different, mostly out of exhaustion: I stopped trying. I sat on the dock next to him and did not mention swimming at all. For six days we talked about other things. He explained the entire plot of a video game to me twice. I learned his parents had separated in March and that he was going back and forth between two houses in a town he had just moved to.
+
+On the seventh day he said, without preamble, "I can''t swim and everybody already thinks I can."
+
+That was the whole thing. Not fear of water — fear of being found out. He had spent two weeks protecting a lie at enormous cost, because admitting it in front of kids who already knew each other felt impossible.
+
+We worked out a deal. I taught him during free period, when the waterfront was empty, and told nobody. By the last week of camp he could make it across the shallow end. He never swam during his cabin''s period, and I never made him.
+
+I have thought about that summer more than almost anything else in high school. My instinct — everyone''s instinct — was to solve the visible problem. The visible problem was almost never the real one. I want to work with kids, and the first thing I will bring is the willingness to sit on the dock for six days.', 'seed', false, 1380, 6, 48, 'seed-38-summer-camp-counselor'),
+('My app has been rejected from the App Store four times. I want to tell you about the fourth one.
+
+The first three were my fault in boring ways — a missing privacy policy, a crash on iPad, a screenshot at the wrong resolution. Fixable. The fourth said my app "duplicated existing functionality," which is Apple''s way of saying: this already exists and yours is not better.
+
+They were right. I had built a habit tracker. There are nine thousand habit trackers. I had spent seven months of evenings building the ten-thousandth, and I had never once asked whether the world needed it. I had asked whether I could build it, which is a completely different question and a much easier one.
+
+I did not code for three weeks after that. When I came back, I did something I should have done first: I asked people what was annoying. Not "what app do you want" — nobody knows that — but what was annoying. My mother, a nurse, said the thing that annoyed her was that shift swaps at her hospital happened over a bulletin board and a group text, and people missed them constantly.
+
+That is not a fun problem. There is no elegant algorithm in it. It is a scheduling board with permissions and notifications, and it is deeply, specifically useful to about forty people at one hospital in my town.
+
+It has been running for five months. Twenty-six nurses use it. My mother says the group text has gotten noticeably quieter.
+
+I used to think being a good engineer meant being able to build anything. I am starting to think it means being willing to build the boring thing that someone actually needs. The habit tracker was better code. The shift board is better work.', 'seed', false, 1410, 6, 45, 'seed-41-coding-bootcamp-failure'),
+('In Model UN, I represented Belarus twice, and both times I lost the same argument in the same way.
+
+The committee was on refugee resettlement quotas. Belarus''s actual position is obstructionist and, frankly, indefensible — which is the point of being assigned it. Most delegates in that spot do one of two things: they abandon the position and vote their conscience, or they defend it so cynically that nobody engages with them. I did the second one. Twice. I lost both times, and I was proud of losing, which should have been my first clue that something was off.
+
+The second loss was to a girl representing Poland who did something I had not considered. She granted my premise. She said, in effect: fine, assume Belarus''s border concerns are real and its capacity is genuinely limited — here is a resettlement structure that survives those constraints. And then she had one. She had actually done the work of building a proposal that would function even if I were right.
+
+I could not argue with it, because she had already argued with it for me, and better.
+
+What I had been doing was performing a position. What she was doing was solving a problem under a constraint she found inconvenient. Those look similar from the outside — both involve a lot of talking — and they are not remotely the same activity.
+
+I have tried to carry that into everything since. In debate, in group projects, in an argument with my father about a curfew: state the other side''s constraint as if it were real, then build something that survives it. It is slower. It wins less often in rooms scored on style.
+
+But the proposals are better, and I would rather be the person who wrote a workable one than the person who was clever about why it could not be done.', 'seed', false, 1440, 6, 55, 'seed-44-model-un-competent'),
+('The Skyline Diner serves about four hundred cups of coffee between eleven at night and six in the morning, and I have poured most of them for the last two summers.
+
+Night shift has a population you do not otherwise meet. Nurses coming off twelve-hour rotations. Long-haul drivers doing the math on their hours. A man named Roy who comes in at 3 a.m. every Tuesday and Friday, orders wheat toast, and reads actual newspapers, plural. Kids my age at 2 a.m. who are either very happy or very sad and never anything between.
+
+You learn the tells. People who are about to cry order dessert. People who have been crying order nothing and take up a booth for an hour, and the right move — I learned this from Denise, who has worked there nineteen years — is to refill the water without asking and not make eye contact. Attention is a kindness in some cases and a cruelty in others, and telling them apart is most of the job.
+
+The thing I did not expect is how much of the night runs on a set of rules nobody wrote down. Roy''s toast starts when his headlights hit the window. The nurses get the corner booth because it is dim and they have been under fluorescents for twelve hours. A regular who is short gets fed and squares it Thursday. None of this is policy. Some of it is technically against policy.
+
+I am going to study something like sociology or public health, and everyone assumes that means I want to fix things. Partly. But mostly I want to notice things — I have spent two summers learning that the actual system in a place is almost never the one written on the wall, and that you can only find the real one by being there at 3 a.m. when it is running.', 'seed', false, 1470, 6, 49, 'seed-47-diner-night-shift'),
+('My science fair project failed to reject the null hypothesis, and my teacher told me to change the data.
+
+Not in those words. What Mr. Keller said was, "You might want to rerun the trials that look like outliers." He said it kindly. He said it the week before the regional deadline, looking at a spreadsheet where my hypothesis — that a particular soil amendment would increase seedling growth — had produced, across ninety-six pots, a difference of essentially nothing.
+
+I understood the offer. Rerun the trials that disagree with you, keep the ones that agree, and the graph starts to have a shape. Nobody would ever know. Half the projects at regionals have a shape that clean.
+
+I did not do it, and I want to be honest that this was not entirely courage. Part of it was that I had already spent eleven weeks measuring hypocotyl lengths with calipers and I could not stand the idea that the number I ended up reporting would be one I had chosen rather than one I had found. It felt like it would make the eleven weeks retroactively fake.
+
+So I presented a null result. I made the graph of nothing. I explained the effect size I would have needed to detect a difference and why my sample was underpowered to find one that small. I got a participation ribbon and watched a volcano win.
+
+Here is the part that has stayed with me: two judges came back afterward. One of them, a soil scientist at the state extension office, asked for my raw data because — she said — the amendment I tested is marketed pretty aggressively to home gardeners on essentially no evidence, and negative results on it are hard to find.
+
+Nobody in my school remembers that project. It is the only thing I have ever made that a professional wanted.', 'seed', false, 1500, 6, 51, 'seed-50-science-fair-negative-result'),
+('There are 1,412 pipes in the organ at St. Bartholomew''s and I have had my hands inside roughly six hundred of them.
+
+The organ was built in 1911 and has been dying, very slowly, since about 1987. The parish cannot afford a professional restoration, which runs to six figures. What it has instead is Mr. Vance, who is eighty-one and was an HVAC technician for forty years, and me, who is seventeen and was bored.
+
+I started because my mother volunteered me. I stayed because of the wind chest. The first time Vance opened one — a wooden box the size of a coffin that distributes pressurized air to the pipes — I saw that it was full of small leather valves called pallets, hundreds of them, each one a little hinged flap that a key press opens. Every note on the keyboard is a rope pulling a flap that lets air into a specific pipe. The whole thing is a machine you could explain to a child, scaled to a size that makes it sound like God.
+
+We releather pallets. That is most of what we do. You steam the old leather off, cut new pieces from a hide, glue them, wait. A wind chest takes about forty hours. There are four.
+
+What I did not anticipate is what this does to listening. I cannot hear the organ as sound anymore. During the processional I hear the 8-foot Principal on the Great, and I know that the slight delay on middle C is a pallet we have not gotten to. The congregation hears music. I hear a specific piece of leather I am going to have to replace in August.
+
+I am not sure whether this is a loss. Something opaque became transparent to me, and now I cannot go back. I want to spend my life doing that to more things — taking the beautiful thing apart until it becomes a mechanism, and finding out that the mechanism is beautiful too.', 'seed', false, 1530, 6, 52, 'seed-53-church-organ-repair'),
+('I have been present for four deaths, and in three of them nobody was talking.
+
+I volunteer at a hospice, which is an odd thing for a sixteen-year-old to do and I did not choose it for good reasons — it was the only volunteer slot left that fit around my job. The training is eleven hours. Most of it is about what not to do. Do not say "I know how you feel." Do not fill silence. Do not, under any circumstances, promise anyone anything about what happens next.
+
+What they do not train you for is how boring it is. That is the part nobody says out loud. Dying, when it is going well, is mostly a person sleeping in a room while a machine measures something, and the volunteer''s job is to be a body in a chair so the person is not alone. I have read four hundred pages of a Louis L''Amour novel aloud to a man who was unconscious for all of it, because his daughter said he liked westerns and I could not think of anything else to do with my voice.
+
+The one death where somebody was talking was a woman named Ruth, who at the very end became briefly, startlingly lucid and asked me whether I had locked the car. I said yes. She said good, and went back to sleep, and died about four hours later. Her last words to another human being were about a car that was not hers, said to a kid she had met twice.
+
+I used to think there would be a summation. Some final compression of a life into a sentence. There is almost never a summation. There is a person who is tired, and small ordinary concerns that stay small and ordinary right up to the edge, and someone in a chair.
+
+I am going into medicine, and I already know the thing I will be worst at is the thing I am practicing now: staying in the room when there is nothing to do in it.', 'seed', false, 1580, 6, 54, 'seed-58-hospice-volunteer'),
+('I have ridden the 47 bus 1,900 times and I have never once been on it for transportation.
+
+Let me explain that. My family moved to this city when I was eleven, into an apartment where I was alone from 3 p.m. until my mother got home at 9. I was not allowed to have people over. I was not allowed to be outside after dark. What I was allowed to do, because it had not occurred to anyone to forbid it, was ride the bus.
+
+A day pass was $2.50 and the 47 is a loop. That is the whole trick: a loop route means you can ride for six hours and end up where you started, and nobody asks you anything, because the bus is full of people also going nowhere in particular.
+
+I did my homework on the 47. I read most of what I have read on the 47. I learned this city the way you learn a song, by repetition without intention — I know that the Vietnamese bakery on Sixteenth changes its sign on Tuesdays, that the man who sells oranges at the Bell Street stop is not there in February, that the stretch past the old foundry is the only place on the route where everyone on the bus goes quiet, and I have never figured out why.
+
+Here is what I did with it. Sophomore year our city put out a draft plan to cut the 47 to peak hours only, on the grounds that midday ridership was low. Midday ridership is low. Midday ridership is also me, and about fifteen regulars I could describe by name, most of whom are elderly and none of whom were at the public comment meeting, which was held at 6 p.m. downtown.
+
+I went. I brought a rider count I had done myself, by hand, for six weeks. I was the only person under sixty who spoke.
+
+They cut it anyway. I want to study transportation policy, and it is not because I think I will win those meetings. It is because I have noticed that the people who show up to them have almost never been on the bus.', 'seed', false, 1650, 6, 53, 'seed-65-bus-route-map'),
+('When I was twelve I corrected my mother''s English in front of a cashier, and she did not speak to me for the rest of the day.
+
+She had said "borrow me the pen." The cashier had understood her perfectly. I said, "Lend. It''s lend me the pen," in the voice of a child who has just discovered he possesses something his parent does not, and I watched her face do something I had never seen it do, which was close.
+
+I have spent five years trying to understand what I actually did in that moment, because "I was rude to my mother" does not cover it.
+
+Here is the closest I have gotten. My mother speaks four languages. She learned English at thirty-four, at night, after cleaning offices, from a workbook and a radio. Her English is a monument to an enormous amount of labor. And in one sentence I reclassified it — publicly, in front of a stranger — from an achievement into a defect. I did not correct an error. I took a thing she had built and told her it was broken.
+
+What makes it worse is that I knew, even at twelve, exactly what I was doing. I was trying to establish, for the cashier, that I was not the same kind of person as the woman next to me. That is the part I cannot get around. It was not pedantry. It was defection.
+
+I have never apologized for it directly, which is a thing I am admitting here for the first time. What I did instead was become the person who handles the phone calls. Insurance, landlords, the DMV, the school — I take the calls, and I have gotten good at a specific and slightly ugly skill, which is sounding like the kind of American who does not get transferred.
+
+I do it in her name. I say "I''m calling on behalf of Marisol Ferreira," and I make them spell it back to me.
+
+That is not an apology. I know that. It is a tax I have decided to pay for a long time.', 'seed', false, 1710, 6, 57, 'seed-71-mothers-accent'),
 ('My mother''s appointment book is written in three alphabets, and I am the only person alive who can read all of it.
 
 Khmer script for the regulars she trusts. English for the walk-ins. And for a certain kind of customer, a private shorthand she invented in the refugee camp in Khao-I-Dang — a system of dots and slashes that her sister devised so they could keep lists the guards couldn''t read. My mother is fifty-one now and owns a nail salon in a strip mall in Lowell, and she still records certain things in camp code. It took me until I was fourteen to notice which things.

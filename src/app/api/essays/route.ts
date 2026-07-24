@@ -9,7 +9,7 @@ import {
 import {
   assertFullEvalAllowed,
   assertNoRunningEvaluation,
-  TIER,
+  matchBudgetFor,
 } from "@/lib/quota";
 
 export const runtime = "nodejs";
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
         draft_id: draft.id,
         user_id: ctx.user.id,
         kind: "full",
-        budget: TIER[ctx.plan].matchBudget,
+        budget: await matchBudgetFor(ctx.db, ctx.plan),
       })
       .select()
       .single();

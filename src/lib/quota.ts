@@ -8,6 +8,21 @@ export const TIER = {
 } as const;
 
 export const QUICK_CHECK_BUDGET = 5;
+
+/**
+ * The tournament can't run more independent matches than it has opponents —
+ * the judge is deterministic, so a rematch adds no information. Cap the budget
+ * at the corpus size so the progress bar and confidence interval stay honest.
+ */
+export async function matchBudgetFor(
+  db: SupabaseClient,
+  plan: Plan
+): Promise<number> {
+  const { count } = await db
+    .from("corpus_essays")
+    .select("id", { count: "exact", head: true });
+  return Math.max(1, Math.min(TIER[plan].matchBudget, (count ?? 0) - 1));
+}
 export const QUICK_CHECKS_PER_DAY = 20;
 
 function monthStart(): string {
