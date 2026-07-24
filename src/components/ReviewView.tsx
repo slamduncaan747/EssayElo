@@ -75,7 +75,11 @@ export default function ReviewView({
           <div className="tabs">
             <span className="active">Review</span>
             <Link href={`/essays/${essayId}/edit`}>Edit</Link>
-            <Link href={`/essays/${essayId}/history`}>History</Link>
+            {isPlus ? (
+              <Link href={`/essays/${essayId}/analysis`}>Analysis</Link>
+            ) : (
+              <Link href={`/essays/${essayId}/history`}>History</Link>
+            )}
           </div>
         </div>
 

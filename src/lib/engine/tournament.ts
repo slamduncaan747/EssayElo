@@ -16,7 +16,13 @@ import type { Evaluation, Harvest, MatchWinner, Margin, ProseTag } from "@/lib/t
 import { corpusEloUpdate, eloUpdate } from "./elo";
 import { pickOpponent, type Opponent } from "./matchmaker";
 import { intransitivityRate, resolveSingle, resolveSwapPair } from "./reliability";
-import { judgeMatchPair, judgePlacement, judgeProse, judgeSingle } from "./judge";
+import {
+  judgeBatch,
+  judgeMatchPair,
+  judgePlacement,
+  judgeProse,
+  judgeSingle,
+} from "./judge";
 import { synthesize, type HarvestedMatch } from "./assemble";
 import { ciElo, tierToElo, eloToScore } from "./scale";
 
@@ -166,77 +172,123 @@ async function stepMatch(db: SupabaseClient, ev: Evaluation): Promise<StepResult
 
   const used = new Set<string>((priorMatches ?? []).map((m) => m.corpus_essay_id as string));
   const pool: Opponent[] = corpus.map((c) => ({ id: c.id as string, elo: c.elo as number }));
-  const opponent = pickOpponent(ev.elo!, ev.matches_done, pool, used);
-  if (!opponent) throw new Error("no opponents available");
 
-  const oppRow = corpus.find((c) => c.id === opponent.id)!;
-  const { data: oppContent } = await db
-    .from("corpus_essays")
-    .select("content")
-    .eq("id", opponent.id)
-    .single();
-  if (!oppContent) throw new Error("opponent content missing");
-
-  // Order-swap stability: two readings, presentation reversed. On token-
-  // limited free tiers, JUDGE_SINGLE_READING=1 halves the load (one reading,
-  // randomized order) at the cost of the per-match flip check.
-  let resolved;
-  if (process.env.JUDGE_SINGLE_READING === "1") {
-    resolved = resolveSingle(await judgeSingle(essay, oppContent.content as string));
-  } else {
-    const [v1, v2] = await judgeMatchPair(essay, oppContent.content as string);
-    resolved = resolveSwapPair(v1, v2);
+  // Pick a batch of opponents for this step. Batching amortizes the system
+  // prompt, schema, and the user's essay across several matches — the dominant
+  // token cost. Opponents are still chosen adaptively, one at a time, against
+  // the estimate as it stood at the start of the step.
+  const batchSize = Math.max(
+    1,
+    Math.min(Number(process.env.JUDGE_BATCH_SIZE ?? 5) || 5, ev.budget - ev.matches_done)
+  );
+  const chosen: Opponent[] = [];
+  for (let i = 0; i < batchSize; i++) {
+    const next = pickOpponent(ev.elo!, ev.matches_done + i, pool, used);
+    if (!next) break;
+    used.add(next.id);
+    chosen.push(next);
   }
+  if (chosen.length === 0) throw new Error("no opponents available");
 
-  const eloBefore = ev.elo!;
-  let eloAfter = eloBefore;
-  if (resolved.winner !== "split") {
-    eloAfter = eloUpdate({
-      elo: eloBefore,
-      oppElo: opponent.elo,
-      matchesPlayed: ev.matches_done,
-      outcome: resolved.winner === "user" ? 1 : 0,
+  const { data: oppRows } = await db
+    .from("corpus_essays")
+    .select("id, content")
+    .in(
+      "id",
+      chosen.map((c) => c.id)
+    );
+  const contentById = new Map<string, string>(
+    (oppRows ?? []).map((r) => [r.id as string, r.content as string])
+  );
+  const batch = chosen.filter((c) => contentById.has(c.id));
+  if (batch.length === 0) throw new Error("opponent content missing");
+
+  const singleReading = process.env.JUDGE_SINGLE_READING === "1";
+  const resolvedByIndex = new Map<number, ReturnType<typeof resolveSingle>>();
+
+  if (batch.length === 1) {
+    // Single-opponent step keeps the full order-swap check when affordable.
+    const oppText = contentById.get(batch[0].id)!;
+    resolvedByIndex.set(
+      0,
+      singleReading
+        ? resolveSingle(await judgeSingle(essay, oppText))
+        : resolveSwapPair(...(await judgeMatchPair(essay, oppText)))
+    );
+  } else {
+    const verdicts = await judgeBatch(
+      essay,
+      batch.map((b) => contentById.get(b.id)!)
+    );
+    for (const v of verdicts) resolvedByIndex.set(v.index, resolveSingle(v.verdict));
+  }
+  if (resolvedByIndex.size === 0) throw new Error("judge returned no verdicts");
+
+  // Apply each verdict in order, walking the rating forward.
+  let elo = ev.elo!;
+  let matchesDone = ev.matches_done;
+  let directionFlag: string | null = ev.direction_flag;
+  const matchRows: Record<string, unknown>[] = [];
+
+  for (let i = 0; i < batch.length; i++) {
+    const resolved = resolvedByIndex.get(i);
+    if (!resolved) continue; // model skipped this rival
+    const opponent = batch[i];
+    const row = corpus.find((c) => c.id === opponent.id)!;
+    const eloBefore = elo;
+
+    if (resolved.winner !== "split") {
+      elo = eloUpdate({
+        elo: eloBefore,
+        oppElo: opponent.elo,
+        matchesPlayed: matchesDone,
+        outcome: resolved.winner === "user" ? 1 : 0,
+        margin: resolved.margin,
+        weight: resolved.weight,
+      });
+      // Accretion: unlocked corpus entrants move too (slowly, until frozen).
+      const newOppElo = corpusEloUpdate(
+        opponent.elo,
+        row.match_count as number,
+        row.locked as boolean,
+        eloBefore,
+        resolved.winner === "opponent",
+        resolved.margin,
+        resolved.weight
+      );
+      await db
+        .from("corpus_essays")
+        .update({ elo: newOppElo, match_count: (row.match_count as number) + 1 })
+        .eq("id", opponent.id);
+    }
+
+    matchRows.push({
+      evaluation_id: ev.id,
+      corpus_essay_id: opponent.id,
+      round: matchesDone,
+      winner: resolved.winner,
       margin: resolved.margin,
       weight: resolved.weight,
+      off_axis: resolved.offAxis,
+      harvest: resolved.harvest,
+      elo_before: eloBefore,
+      elo_after: elo,
+      opp_elo: opponent.elo,
     });
-    // Accretion: unlocked corpus entrants move too (slowly, until frozen).
-    const newOppElo = corpusEloUpdate(
-      opponent.elo,
-      oppRow.match_count as number,
-      oppRow.locked as boolean,
-      eloBefore,
-      resolved.winner === "opponent",
-      resolved.margin,
-      resolved.weight
-    );
-    await db
-      .from("corpus_essays")
-      .update({ elo: newOppElo, match_count: (oppRow.match_count as number) + 1 })
-      .eq("id", opponent.id);
+    directionFlag ??= resolved.harvest.direction_flag;
+    matchesDone++;
   }
 
-  const directionFlag = resolved.harvest.direction_flag;
+  if (matchRows.length > 0) {
+    const { error } = await db.from("matches").insert(matchRows);
+    if (error) throw new Error(`recording matches failed: ${error.message}`);
+  }
 
-  await db.from("matches").insert({
-    evaluation_id: ev.id,
-    corpus_essay_id: opponent.id,
-    round: ev.matches_done,
-    winner: resolved.winner,
-    margin: resolved.margin,
-    weight: resolved.weight,
-    off_axis: resolved.offAxis,
-    harvest: resolved.harvest,
-    elo_before: eloBefore,
-    elo_after: eloAfter,
-    opp_elo: opponent.elo,
-  });
-
-  const matchesDone = ev.matches_done + 1;
   const nextPhase =
     matchesDone >= ev.budget ? (ev.kind === "full" ? "prose" : "synthesis") : "match";
 
   await release(db, ev.id, {
-    elo: eloAfter,
+    elo,
     matches_done: matchesDone,
     phase: nextPhase,
     ...(directionFlag && !ev.direction_flag ? { direction_flag: directionFlag } : {}),

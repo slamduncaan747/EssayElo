@@ -48,6 +48,13 @@ export interface StructuredCallOpts {
   schema: Record<string, unknown>;
   maxTokens?: number;
   thinking?: boolean;
+  /**
+   * Compact human-readable description of the output shape. JSON-mode
+   * providers get this instead of the serialized JSON Schema, which can cost
+   * more tokens than the essays themselves. The Anthropic path always uses the
+   * real schema (native structured outputs).
+   */
+  schemaHint?: string;
 }
 
 /** One structured-output call: returns parsed JSON matching `schema`. */
@@ -96,7 +103,8 @@ async function openAiCompatCall<T>(opts: StructuredCallOpts): Promise<T> {
   if (!base || !key) {
     throw new Error("LLM_BASE_URL and LLM_API_KEY must be set for openai-compat");
   }
-  const system = `${opts.system}\n\nRespond with ONLY a JSON object, no prose or markdown, matching this JSON schema exactly:\n${JSON.stringify(opts.schema)}`;
+  const shape = opts.schemaHint ?? JSON.stringify(opts.schema);
+  const system = `${opts.system}\n\nRespond with ONLY a JSON object, no prose or markdown, in exactly this shape:\n${shape}`;
 
   // Reasoning models (e.g. Gemini flash) spend output tokens thinking before
   // the JSON, so floor the budget and pass through the effort control. Not all

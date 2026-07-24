@@ -58,6 +58,83 @@ export function compareUser(essayA: string, essayB: string): string {
   return `ESSAY A:\n\n${essayA}\n\n---\n\nESSAY B:\n\n${essayB}\n\nWhich essay reveals the less producible person? Verdict first.`;
 }
 
+// --- Batched comparison ------------------------------------------------------
+// One call judges MINE against several RIVALs. The system prompt, the schema,
+// and MINE are sent once instead of once per match — the dominant token cost.
+// Each verdict is still a distinct directional call on a distinct pair, and
+// per-match presentation order is randomized by the caller.
+
+export const COMPARE_BATCH_SYSTEM = `${COMPARE_SYSTEM}
+
+You will be given one essay labelled MINE and several labelled RIVAL 1, RIVAL 2, … Judge MINE against EACH rival independently and report one verdict per rival. Do not rank the rivals against each other, and do not let your call on one rival change your call on another — each is its own head-to-head.
+
+Commit to every verdict before writing any explanation.`;
+
+export function compareBatchUser(mine: string, rivals: string[]): string {
+  const blocks = rivals
+    .map((r, i) => `RIVAL ${i + 1}:\n\n${r}`)
+    .join("\n\n---\n\n");
+  return `MINE:\n\n${mine}\n\n---\n\n${blocks}\n\nFor each rival: does MINE or that RIVAL reveal the less producible person? Verdicts first.`;
+}
+
+/**
+ * Compact schema hint for JSON-mode providers. The full JSON Schema costs ~595
+ * tokens to serialize; this conveys the same contract in ~180.
+ */
+export const COMPARE_BATCH_HINT = `{
+  "verdicts": [   // exactly one per rival, in order
+    {
+      "rival": <1-based rival number>,
+      "winner": "mine" | "rival",
+      "margin": "decisive" | "clear" | "narrow",
+      "differentiator": "the one thing that most separated them",
+      "axis": "producibility" | "execution" | "cohesion",
+      "reason": "why the winner won, one sentence"
+    }
+  ],
+  // About MINE only — judged once across all rivals:
+  "most_producible_revelation": "MINE's most common revelation, one clause",
+  "producibility_estimate": "rough count who could reveal the same, e.g. ~10,000",
+  "met_person_moment": "beat where a real person first became visible, or null",
+  "wasted_opportunity": "a squandered chance at a rarer revelation, or null",
+  "direction_flag": "clearly negative distinctiveness in MINE, else null"
+}`;
+
+const VERDICT_SCHEMA = {
+  type: "object",
+  properties: {
+    rival: { type: "integer" },
+    winner: { type: "string", enum: ["mine", "rival"] },
+    margin: { type: "string", enum: ["decisive", "clear", "narrow"] },
+    differentiator: { type: "string" },
+    axis: { type: "string", enum: ["producibility", "execution", "cohesion"] },
+    reason: { type: "string" },
+  },
+  required: ["rival", "winner", "margin", "differentiator", "axis", "reason"],
+  additionalProperties: false,
+} as const;
+
+export const COMPARE_BATCH_SCHEMA = {
+  type: "object",
+  properties: {
+    verdicts: { type: "array", items: VERDICT_SCHEMA },
+    most_producible_revelation: { type: "string" },
+    producibility_estimate: { type: "string" },
+    met_person_moment: { type: ["string", "null"] },
+    wasted_opportunity: { type: ["string", "null"] },
+    direction_flag: { type: ["string", "null"] },
+  },
+  required: [
+    "verdicts",
+    "most_producible_revelation",
+    "producibility_estimate",
+    "met_person_moment",
+    "wasted_opportunity",
+    "direction_flag",
+  ],
+  additionalProperties: false,
+} as const;
+
 /** Per-essay harvested fields — byproducts of the verdict, nothing more. */
 const COMPARE_SIDE_SCHEMA = {
   type: "object",
