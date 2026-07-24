@@ -30,6 +30,14 @@ export const JUDGE_MODEL =
 export const SYNTH_MODEL =
   process.env.LLM_MODEL_SYNTH || process.env.ANTHROPIC_MODEL_SYNTH || DEFAULT_MODEL;
 
+/**
+ * Model for the two simple calls — placement (a 3-way triage) and prose (one
+ * score). Neither needs the judging model's capability. Pointing this at a
+ * smaller model saves the judge's quota and, on providers that meter per
+ * model, spreads load across separate buckets. Defaults to the judge model.
+ */
+export const CHEAP_MODEL = process.env.LLM_MODEL_CHEAP || JUDGE_MODEL;
+
 export const MOCK_JUDGE = process.env.MOCK_JUDGE === "1";
 
 let _anthropic: Anthropic | null = null;
@@ -148,11 +156,18 @@ async function openAiCompatCall<T>(opts: StructuredCallOpts): Promise<T> {
       sendReasoning = false;
       continue;
     }
+    // A per-day quota resets in hours, not seconds — retrying just burns the
+    // request budget and the user's time. Surface it immediately.
+    if (res.status === 429 && isDailyQuota(detail)) {
+      throw new Error(quotaMessage(detail));
+    }
     const retryable = res.status === 429 || res.status >= 500;
     if (!retryable || attempt === MAX_ATTEMPTS) {
       throw new Error(`LLM request failed (${res.status}): ${detail.slice(0, 300)}`);
     }
     const wait = retryWaitMs(res, detail, attempt);
+    // Likewise, don't sit through a multi-minute window inside one request.
+    if (wait > 60000) throw new Error(quotaMessage(detail));
     await new Promise((r) => setTimeout(r, wait));
   }
 
@@ -162,6 +177,21 @@ async function openAiCompatCall<T>(opts: StructuredCallOpts): Promise<T> {
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error("Empty model response");
   return JSON.parse(stripFence(content)) as T;
+}
+
+/** A daily (rather than per-minute) quota — no point retrying in-request. */
+function isDailyQuota(body: string): boolean {
+  return /per day|\bTPD\b|\bRPD\b|requests per day|free_tier_requests/i.test(body);
+}
+
+/** Turn a provider quota dump into something a human can act on. */
+function quotaMessage(body: string): string {
+  const when = body.match(/try again in ([\dhms.]+)/i)?.[1];
+  return (
+    `The evaluation model's quota is exhausted${when ? ` (resets in ${when})` : ""}. ` +
+    `Switch LLM_MODEL_JUDGE to a model with its own quota (e.g. llama-3.1-8b-instant), ` +
+    `set MOCK_JUDGE=1 to exercise the app without an API, or upgrade the provider plan.`
+  );
 }
 
 /**

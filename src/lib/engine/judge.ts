@@ -5,7 +5,7 @@
  */
 
 import type { Harvest, Margin } from "@/lib/types";
-import { JUDGE_MODEL, MOCK_JUDGE, structuredCall } from "@/lib/anthropic";
+import { CHEAP_MODEL, JUDGE_MODEL, MOCK_JUDGE, structuredCall } from "@/lib/anthropic";
 import {
   COMPARE_BATCH_HINT,
   COMPARE_BATCH_SCHEMA,
@@ -46,7 +46,7 @@ interface CompareOutput {
 export async function judgePlacement(essay: string): Promise<number> {
   if (MOCK_JUDGE) return mockPlacement(essay).tier;
   const out = await structuredCall<{ tier: number }>({
-    model: JUDGE_MODEL,
+    model: CHEAP_MODEL,
     system: PLACEMENT_SYSTEM,
     user: placementUser(essay),
     schema: PLACEMENT_SCHEMA as unknown as Record<string, unknown>,
@@ -238,7 +238,7 @@ export async function judgeProse(
 ): Promise<{ prose_score: number; note: string }> {
   if (MOCK_JUDGE) return mockProse(essay);
   return structuredCall<{ prose_score: number; note: string }>({
-    model: JUDGE_MODEL,
+    model: CHEAP_MODEL,
     system: PROSE_SYSTEM,
     user: proseUser(essay),
     schema: PROSE_SCHEMA as unknown as Record<string, unknown>,
