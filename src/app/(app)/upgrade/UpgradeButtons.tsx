@@ -23,7 +23,7 @@ export function CheckoutButton() {
 
   return (
     <>
-      <button className="btn btn-gold btn-block btn-lg" onClick={go} disabled={busy}>
+      <button className="btn btn-gold btn-block btn-xl" onClick={go} disabled={busy}>
         {busy ? "Redirecting…" : "Unlock the full review"}
         {busy ? null : <Icon name="arrowRight" size={18} />}
       </button>

@@ -1,32 +1,61 @@
 import Icon from "./Icon";
-import { tierForScore, tierProgress, type Tier } from "@/lib/tier";
+import { pointsToNext, tierForScore, tierProgress, type Tier } from "@/lib/tier";
 
 /**
- * Shared score furniture: the rank badge, the 0–100 meter, and the ring the
- * review panel leads with. Every screen that shows a number uses these, so a
- * score reads the same everywhere.
+ * Shared score furniture. Every screen that shows a number builds it from
+ * these, so a score keeps one identity across the whole product.
  */
 
-export function TierBadge({
+/** The rank name as a pill. */
+export function Rank({
   tier,
+  size = "md",
   onDark = false,
-  showIcon = true,
 }: {
   tier: Tier;
+  size?: "md" | "lg";
   onDark?: boolean;
-  showIcon?: boolean;
 }) {
   return (
     <span
-      className="tier"
+      className={`rank ${size === "lg" ? "rank-lg" : ""}`}
       style={{
-        background: onDark ? "rgba(246,241,231,.1)" : tier.soft,
+        background: onDark ? "rgba(250,246,238,.1)" : tier.soft,
         color: onDark ? "var(--on-dark)" : tier.ink,
       }}
     >
-      <span className="tier-dot" style={{ background: tier.color }} />
-      {showIcon && tier.key === "standout" ? <Icon name="crown" size={13} /> : null}
+      <span className="rank-dot" style={{ background: tier.color }} />
+      {tier.key === "standout" ? <Icon name="crown" size={13} /> : null}
       {tier.name}
+    </span>
+  );
+}
+
+/** Circular medallion holding the score itself — the trophy of the system. */
+export function Medal({
+  value,
+  display,
+  size = 64,
+}: {
+  value: number;
+  display: string;
+  size?: number;
+}) {
+  const tier = tierForScore(value);
+  // Gold is too light to carry white text; the top rank takes dark ink instead.
+  const ink = tier.key === "standout" ? "var(--n-900)" : "#fff";
+  return (
+    <span
+      className="medal"
+      style={{
+        width: size,
+        height: size,
+        background: `linear-gradient(160deg, ${tier.color}, ${tier.deep})`,
+        fontSize: display.length > 3 ? size * 0.28 : size * 0.36,
+        color: ink,
+      }}
+    >
+      {display}
     </span>
   );
 }
@@ -38,20 +67,25 @@ export function ScoreMeter({
   color,
   onDark = false,
   ticks = true,
+  small = false,
 }: {
   low: number;
   high: number;
   color: string;
   onDark?: boolean;
   ticks?: boolean;
+  small?: boolean;
 }) {
-  const width = Math.max(high - low, 2.5);
   return (
     <div style={{ width: "100%" }}>
-      <div className={`meter ${onDark ? "meter-dark" : ""}`}>
+      <div className={`meter ${small ? "meter-sm" : ""} ${onDark ? "meter-dark" : ""}`}>
         <div
           className="meter-fill"
-          style={{ left: `${low}%`, width: `${width}%`, background: color }}
+          style={{
+            left: `${low}%`,
+            width: `${Math.max(high - low, 2.5)}%`,
+            background: color,
+          }}
         />
       </div>
       {ticks ? (
@@ -65,28 +99,26 @@ export function ScoreMeter({
   );
 }
 
-/** Big circular score. `label` sits under the number (e.g. the tier name). */
+/** Big circular score. `display` is what gets printed — "62.4" or "54–63". */
 export function ScoreRing({
   value,
   display,
   label,
-  size = 148,
+  size = 152,
   onDark = false,
 }: {
-  /** 0–100, drives the sweep. */
   value: number;
-  /** What to print in the middle — "62.4" or "54–63". */
   display: string;
   label?: string;
   size?: number;
   onDark?: boolean;
 }) {
   const tier = tierForScore(value);
-  const stroke = Math.round(size * 0.085);
+  const stroke = Math.round(size * 0.09);
   const r = (size - stroke) / 2 - 2;
   const c = 2 * Math.PI * r;
   const swept = Math.min(1, Math.max(0, value / 100)) * c;
-  const long = display.length > 5;
+  const long = display.length > 4;
 
   return (
     <div className={`ring ${onDark ? "ring-dark" : ""}`} style={{ width: size, height: size }}>
@@ -108,11 +140,11 @@ export function ScoreRing({
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={`${swept} ${c}`}
-          style={{ transition: "stroke-dasharray .8s cubic-bezier(.2,.9,.3,1)" }}
+          style={{ transition: "stroke-dasharray .9s var(--ease)" }}
         />
       </svg>
       <div className="ring-value" style={{ color: onDark ? "var(--on-dark)" : "var(--text)" }}>
-        <b style={{ fontSize: long ? size * 0.2 : size * 0.28 }}>{display}</b>
+        <b style={{ fontSize: long ? size * 0.235 : size * 0.31 }}>{display}</b>
         {label ? <span>{label}</span> : null}
       </div>
     </div>
@@ -120,23 +152,28 @@ export function ScoreRing({
 }
 
 /** Progress toward the next rank — the "keep going" nudge. */
-export function TierProgress({ score, onDark = false }: { score: number; onDark?: boolean }) {
+export function NextRank({ score, onDark = false }: { score: number; onDark?: boolean }) {
   const tier = tierForScore(score);
+  const ahead = pointsToNext(score);
   const pct = Math.round(tierProgress(score) * 100);
-  if (tier.key === "standout") {
+
+  if (!ahead) {
     return (
-      <span className="tiny" style={{ color: onDark ? "var(--on-dark-3)" : undefined }}>
+      <span className="tiny" style={onDark ? { color: "var(--on-dark-3)" } : undefined}>
         Top rank reached — 0.4% of essays get here.
       </span>
     );
   }
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 7, width: "100%" }}>
       <div className={`meter meter-sm ${onDark ? "meter-dark" : ""}`}>
         <div className="meter-fill" style={{ left: 0, width: `${pct}%`, background: tier.color }} />
       </div>
-      <span className="tiny" style={{ color: onDark ? "var(--on-dark-3)" : undefined }}>
-        {pct}% of the way to the next rank
+      <span className="tiny" style={onDark ? { color: "var(--on-dark-3)" } : undefined}>
+        <b style={{ color: onDark ? "var(--on-dark-2)" : "var(--text-3)" }}>
+          {ahead.points} points
+        </b>{" "}
+        to {ahead.next.name}
       </span>
     </div>
   );

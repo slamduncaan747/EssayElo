@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { TIERS, tierCeiling } from "@/lib/tier";
+import { TIERS, tierRange } from "@/lib/tier";
 import Icon from "./Icon";
 
 /** The ⓘ popover: the rank ladder. No contextualizing copy on the number
@@ -15,16 +15,23 @@ export default function InfoPopover() {
     const onClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   return (
-    <div ref={ref} style={{ position: "relative", alignSelf: "center" }}>
+    <div ref={ref} style={{ position: "relative", display: "flex" }}>
       <button
         className="info-btn"
         onClick={() => setOpen((v) => !v)}
-        aria-label="What scores mean"
+        aria-label="What the ranks mean"
         aria-expanded={open}
       >
         <Icon name="info" size={14} strokeWidth={2.4} />
@@ -32,20 +39,15 @@ export default function InfoPopover() {
       {open ? (
         <div className="popover pop-in">
           <h4>What the ranks mean</h4>
-          <div className="tier-list">
-            {TIERS.map((t) => {
-              const ceil = tierCeiling(t);
-              return (
-                <div key={t.key} className="tier-list-row">
-                  <b style={{ color: t.ink }}>
-                    {t.key === "standout" ? "80+" : `${t.min}–${ceil - 1}`}
-                  </b>
-                  <span>
-                    <b style={{ color: t.ink }}>{t.name}.</b> {t.blurb}
-                  </span>
-                </div>
-              );
-            })}
+          <div className="pop-list">
+            {TIERS.map((t) => (
+              <div key={t.key} className="pop-row">
+                <b style={{ color: t.ink }}>{tierRange(t)}</b>
+                <span>
+                  <b style={{ color: t.ink }}>{t.name}.</b> {t.blurb}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       ) : null}

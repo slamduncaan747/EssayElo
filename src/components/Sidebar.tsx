@@ -6,7 +6,7 @@ import { signOut } from "@/app/(auth)/actions";
 import Icon, { type IconName } from "./Icon";
 
 const NAV: { href: string; label: string; icon: IconName; key: string }[] = [
-  { href: "/dashboard", label: "My essays", icon: "stack", key: "essays" },
+  { href: "/dashboard", label: "My essays", icon: "essays", key: "essays" },
   { href: "/essays/new", label: "Score an essay", icon: "plus", key: "drafts" },
   { href: "/how-scoring-works", label: "How scoring works", icon: "compass", key: "how" },
 ];
@@ -17,6 +17,7 @@ export default function Sidebar({
   active,
   activeEssayId,
   evalsLeft,
+  evalsTotal,
 }: {
   plan: Plan;
   items: EssayListItem[];
@@ -24,22 +25,24 @@ export default function Sidebar({
   activeEssayId?: string;
   /** Full evaluations remaining this month, when the page has it to hand. */
   evalsLeft?: number;
+  evalsTotal?: number;
 }) {
   const recent = items.slice(0, 4);
+  const pct =
+    evalsLeft != null && evalsTotal ? Math.round((evalsLeft / evalsTotal) * 100) : null;
+
   return (
-    <aside className="rail">
-      <Link href="/dashboard" className="logo logo-dark">
-        <div className="logo-mark">M</div>
-        <span className="logo-name">Margin</span>
+    <aside className="rail on-dark-scroll">
+      <Link href="/dashboard" className="logo">
+        <span className="logo-mark">M</span>
+        <span className="logo-name" style={{ color: "var(--on-dark)" }}>
+          Margin
+        </span>
         {plan === "plus" ? <span className="badge-plus">Plus</span> : null}
       </Link>
 
       {NAV.map((n) => (
-        <Link
-          key={n.key}
-          href={n.href}
-          className={`navitem ${active === n.key ? "active" : ""}`}
-        >
+        <Link key={n.key} href={n.href} className={`navitem ${active === n.key ? "active" : ""}`}>
           <Icon name={n.icon} size={19} />
           {n.label}
         </Link>
@@ -47,7 +50,7 @@ export default function Sidebar({
 
       {recent.length > 0 ? (
         <>
-          <div className="rail-section">Recent</div>
+          <div className="rail-head">Recent</div>
           {recent.map(({ essay, latestEval }) => {
             const score =
               plan === "plus" && latestEval?.status === "done" && latestEval.elo != null
@@ -70,19 +73,32 @@ export default function Sidebar({
       <div className="push" />
 
       {evalsLeft != null ? (
-        <div className="quota-card">
-          <div className="spread">
+        <div className="quota">
+          <div className="quota-top">
             <span className="label">Evaluations left</span>
-            <b>{evalsLeft}</b>
+            <b>
+              {evalsLeft}
+              {evalsTotal ? (
+                <span style={{ color: "var(--on-dark-3)", fontSize: 12 }}>/{evalsTotal}</span>
+              ) : null}
+            </b>
           </div>
-          <span style={{ font: "700 11px var(--sans)", color: "var(--on-dark-3)" }}>
+          {pct != null ? (
+            <div className="meter meter-sm meter-dark">
+              <div
+                className="meter-fill"
+                style={{ left: 0, width: `${pct}%`, background: "var(--gold)" }}
+              />
+            </div>
+          ) : null}
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--on-dark-3)" }}>
             Quick checks stay free &amp; unlimited
           </span>
         </div>
       ) : null}
 
       {plan === "free" ? (
-        <Link href="/upgrade" className="upsell-card">
+        <Link href="/upgrade" className="upsell">
           <b>
             <Icon name="crown" size={15} />
             Go Plus

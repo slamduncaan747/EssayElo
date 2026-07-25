@@ -24,7 +24,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
   const lastFull = doneEvals.find((e) => e.kind === "full") ?? null;
   const lastAny = doneEvals[0] ?? null;
 
-  const band = (elo: number, ci: number) => {
+  const bandText = (elo: number, ci: number) => {
     const b = bandFromElo(elo, ci);
     return `${b.low}–${b.high}`;
   };
@@ -32,7 +32,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
   // Draft history with the band each version earned.
   const history = drafts.map((d) => {
     const ev = doneEvals.find((e) => e.draft_id === d.id);
-    return { version: d.version, band: ev ? band(ev.elo!, ev.ci!) : null };
+    return { version: d.version, band: ev ? bandText(ev.elo!, ev.ci!) : null };
   });
 
   const evaluatedDraft = lastAny ? drafts.find((d) => d.id === lastAny.draft_id) : null;
@@ -54,7 +54,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
           version={latestDraft.version}
           initialContent={latestDraft.content}
           evaluatedWordCount={evaluatedDraft?.word_count ?? 0}
-          lastBand={lastAny ? band(lastAny.elo!, lastAny.ci!) : null}
+          lastBand={lastAny ? bandFromElo(lastAny.elo!, lastAny.ci!) : null}
           hint={hint}
           history={history}
           canQuickCheck={doneEvals.length > 0}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Icon from "@/components/Icon";
-import { TierBadge } from "@/components/Score";
+import { Rank } from "@/components/Score";
 import { getEssayBundle, getProfile, listEssays } from "@/lib/data";
 import { bandFromElo, eloToScore } from "@/lib/engine/scale";
 import { tierForBand } from "@/lib/tier";
@@ -25,7 +25,7 @@ export default async function HistoryPage({ params }: { params: Promise<{ id: st
     <div className="shell">
       <Sidebar plan={profile.plan} items={items} active="essays" activeEssayId={id} />
       <main className="main">
-        <div className="doc-header">
+        <div className="doc-bar">
           <div className="doc-title">
             <b>{essay.title}</b>
           </div>
@@ -36,17 +36,17 @@ export default async function HistoryPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <div className="page" style={{ maxWidth: 720 }}>
-          <div className="stack" style={{ gap: 4 }}>
+        <div className="page" style={{ maxWidth: 760 }}>
+          <div className="stack g2">
             <h1 className="h1">Draft history</h1>
-            <span className="small">Every version, and what it scored.</span>
+            <span className="small">Every version of this essay, and what it scored.</span>
           </div>
 
-          <div className="stack" style={{ gap: 12 }}>
+          <div className="stack g4">
             {drafts.map((d) => {
               const evs = evaluations.filter((e) => e.draft_id === d.id && e.status === "done");
               return (
-                <div key={d.id} className="card" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+                <div key={d.id} className="card card-pad stack g4">
                   <div className="spread">
                     <span className="h2">Draft {d.version}</span>
                     <span className="tiny">
@@ -58,29 +58,24 @@ export default async function HistoryPage({ params }: { params: Promise<{ id: st
                     </span>
                   </div>
                   {evs.length === 0 ? (
-                    <span className="tiny" style={{ display: "flex", gap: 7, alignItems: "center" }}>
+                    <span className="tiny row g2">
                       <Icon name="clock" size={14} />
                       Not evaluated
                     </span>
                   ) : (
-                    <div className="stack" style={{ gap: 8 }}>
+                    <div className="stack g2">
                       {evs.map((ev) => {
                         const b =
                           ev.elo != null && ev.ci != null ? bandFromElo(ev.elo, ev.ci) : null;
                         const tier = b ? tierForBand(b.low, b.high) : null;
                         return (
-                          <div key={ev.id} className="history-row">
-                            <span
-                              style={{ display: "flex", alignItems: "center", gap: 8 }}
-                            >
-                              <Icon
-                                name={ev.kind === "quick" ? "bolt" : "swords"}
-                                size={14}
-                              />
+                          <div key={ev.id} className="ledger-row">
+                            <span className="row g2">
+                              <Icon name={ev.kind === "quick" ? "bolt" : "versus"} size={15} />
                               {ev.kind === "quick" ? "Quick check" : "Full evaluation"}
                             </span>
-                            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              {tier ? <TierBadge tier={tier} showIcon={false} /> : null}
+                            <span className="row g3">
+                              {tier ? <Rank tier={tier} /> : null}
                               <b className="num" style={{ color: tier?.ink }}>
                                 {b
                                   ? isPlus && ev.kind === "full"

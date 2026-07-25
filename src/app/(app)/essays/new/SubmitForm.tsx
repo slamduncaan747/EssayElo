@@ -10,6 +10,8 @@ const TYPES = [
   '"Why us?" essay',
 ] as const;
 
+const MIN_CHARS = 400;
+
 /** Strip pasted rich-text artifacts: smart quotes stay, layout junk goes. */
 function cleanPaste(text: string): string {
   return text
@@ -48,7 +50,8 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
   const areaRef = useRef<HTMLTextAreaElement>(null);
 
   const words = useMemo(() => content.split(/\s+/).filter(Boolean).length, [content]);
-  const ready = content.trim().length >= 400;
+  const chars = content.trim().length;
+  const ready = chars >= MIN_CHARS;
 
   function applyText(next: string, fromPaste: boolean) {
     setContent(next);
@@ -60,7 +63,7 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
   async function submit() {
     setError(null);
     if (!ready) {
-      setError("Paste the full essay first (at least 400 characters).");
+      setError("Paste the full essay first — at least 400 characters.");
       return;
     }
     setSubmitting(true);
@@ -88,8 +91,8 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
       style={{
         flex: 1,
         display: "grid",
-        gridTemplateColumns: "minmax(0,1fr) 290px",
-        gap: 20,
+        gridTemplateColumns: "minmax(0,1fr) 300px",
+        gap: "var(--s5)",
         alignItems: "stretch",
       }}
     >
@@ -97,8 +100,9 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
         <textarea
           ref={areaRef}
           className="editor-area"
-          style={{ flex: 1, padding: "28px 32px", minHeight: 440 }}
+          style={{ flex: 1, padding: "var(--s7) var(--s8)", minHeight: 460 }}
           placeholder="Paste your essay here…"
+          aria-label="Essay text"
           value={content}
           onChange={(e) => applyText(e.target.value, false)}
           onPaste={(e) => {
@@ -110,14 +114,14 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
             applyText(next, true);
           }}
         />
-        <div className="doc-footer" style={{ borderTop: "2px solid var(--border)" }}>
+        <div className="doc-foot">
           {pasted ? (
             <span className="chip chip-green">
               <Icon name="check" size={13} strokeWidth={3} />
               Formatting cleaned
             </span>
           ) : (
-            <span style={{ color: "var(--faint)" }}>Formatting is stripped automatically</span>
+            <span style={{ color: "var(--text-4)" }}>Formatting is stripped automatically</span>
           )}
           <span style={{ marginLeft: "auto" }} className="num">
             {words} words
@@ -125,22 +129,22 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
         </div>
       </div>
 
-      <div className="stack" style={{ gap: 18 }}>
-        <div className="stack" style={{ gap: 8 }}>
+      <div className="stack g6">
+        <div className="stack g3">
           <span className="label">Essay type</span>
           {TYPES.map((t) => {
-            const selected = essayType === t;
+            const on = essayType === t;
             return (
               <button
                 key={t}
-                className={`choice ${selected ? "selected" : ""}`}
+                className={`choice ${on ? "on" : ""}`}
                 onClick={() => {
                   setEssayType(t);
                   setTypeTouched(true);
                 }}
               >
                 <span>{t}</span>
-                <span className="choice-check">
+                <span className="choice-mark">
                   <Icon name="check" size={12} strokeWidth={3.2} />
                 </span>
               </button>
@@ -165,15 +169,26 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
           />
         </div>
 
-        <div className="push stack" style={{ gap: 9 }}>
+        <div className="push stack g3">
           {error ? <p className="error-text">{error}</p> : null}
+          {content && !ready ? (
+            <div className="stack g2">
+              <div className="meter meter-sm">
+                <div
+                  className="meter-fill"
+                  style={{ left: 0, width: `${Math.min(100, (chars / MIN_CHARS) * 100)}%` }}
+                />
+              </div>
+              <span className="tiny">{MIN_CHARS - chars} more characters to go</span>
+            </div>
+          ) : null}
           <button
-            className="btn btn-primary btn-block btn-lg"
+            className="btn btn-primary btn-block btn-xl"
             onClick={submit}
             disabled={submitting || evalsLeft <= 0}
           >
             {submitting ? "Starting…" : "Evaluate essay"}
-            {submitting ? null : <Icon name="arrowRight" size={18} />}
+            {submitting ? null : <Icon name="arrowRight" size={19} />}
           </button>
           <span className="tiny center" style={{ display: "block" }}>
             {evalsLeft > 0

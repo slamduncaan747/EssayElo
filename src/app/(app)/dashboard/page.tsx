@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import Icon from "@/components/Icon";
-import { ScoreMeter, TierBadge } from "@/components/Score";
+import { Medal, Rank, ScoreMeter } from "@/components/Score";
 import { getProfile, listEssays } from "@/lib/data";
 import { supabaseServer } from "@/lib/supabase/server";
 import { bandFromElo, eloToScore } from "@/lib/engine/scale";
@@ -33,13 +33,13 @@ export default async function Dashboard({
   const left = Math.max(0, limit - used);
   const isPlus = profile.plan === "plus";
 
-  // Best score across every finished evaluation, for the stat row.
   const scored = items
     .filter((i) => i.latestEval?.status === "done" && i.latestEval.elo != null)
     .map((i) => eloToScore(i.latestEval!.elo!));
   const best = scored.length ? Math.max(...scored) : null;
+  const bestTier = best != null ? tierForScore(best) : null;
 
-  // Progress strip: draft-history of the most recently updated scored essay.
+  // Progress strip: every finished score for the most recently updated essay.
   const progressItem = items.find((i) => i.latestEval && i.latestEval.status === "done");
   let progress: { title: string; id: string; bars: number[]; delta: number | null } | null = null;
   if (progressItem) {
@@ -57,7 +57,7 @@ export default async function Dashboard({
       progress = {
         title: progressItem.essay.title,
         id: progressItem.essay.id,
-        bars: scores.slice(-6),
+        bars: scores.slice(-8),
         delta: scores.length > 1 ? Math.round(scores[scores.length - 1] - scores[0]) : null,
       };
     }
@@ -65,7 +65,13 @@ export default async function Dashboard({
 
   return (
     <div className="shell">
-      <Sidebar plan={profile.plan} items={items} active="essays" evalsLeft={left} />
+      <Sidebar
+        plan={profile.plan}
+        items={items}
+        active="essays"
+        evalsLeft={left}
+        evalsTotal={limit}
+      />
       <main className="main">
         <div className="page">
           {upgraded ? (
@@ -75,12 +81,12 @@ export default async function Dashboard({
             </div>
           ) : null}
 
-          <div className="spread" style={{ flexWrap: "wrap" }}>
-            <div className="stack" style={{ gap: 3 }}>
+          <div className="masthead">
+            <div className="stack g2">
               <h1 className="h1">Your essays</h1>
               <span className="small">
                 {items.length
-                  ? `${items.length} essay${items.length === 1 ? "" : "s"} · ${left} evaluation${left === 1 ? "" : "s"} left this month`
+                  ? `${items.length} essay${items.length === 1 ? "" : "s"} · ${left} of ${limit} evaluations left this month`
                   : "Nothing scored yet — paste an essay to get your first number."}
               </span>
             </div>
@@ -90,13 +96,10 @@ export default async function Dashboard({
             </Link>
           </div>
 
-          <div className="stat-row">
+          <div className="stats">
             <div className="stat">
-              <span
-                className="stat-icon"
-                style={{ background: "var(--brand-soft)", color: "var(--brand)" }}
-              >
-                <Icon name="stack" size={20} />
+              <span className="stat-icon" style={{ background: "var(--brand-50)", color: "var(--brand)" }}>
+                <Icon name="essays" size={21} />
               </span>
               <div>
                 <b>{items.length}</b>
@@ -104,23 +107,19 @@ export default async function Dashboard({
               </div>
             </div>
             <div className="stat">
-              <span
-                className="stat-icon"
-                style={{ background: "var(--gold-soft)", color: "var(--gold-press)" }}
-              >
-                <Icon name="trophy" size={20} />
+              <span className="stat-icon" style={{ background: "var(--gold-50)", color: "var(--gold-press)" }}>
+                <Icon name="trophy" size={21} />
               </span>
               <div>
-                <b>{best != null ? (isPlus ? best.toFixed(1) : Math.round(best)) : "—"}</b>
-                <span>Best score</span>
+                <b style={{ color: bestTier?.ink }}>
+                  {best != null ? (isPlus ? best.toFixed(1) : Math.round(best)) : "—"}
+                </b>
+                <span>{bestTier ? bestTier.name : "Best score"}</span>
               </div>
             </div>
             <div className="stat">
-              <span
-                className="stat-icon"
-                style={{ background: "var(--green-soft)", color: "var(--green-ink)" }}
-              >
-                <Icon name="bolt" size={20} />
+              <span className="stat-icon" style={{ background: "var(--green-50)", color: "var(--green-ink)" }}>
+                <Icon name="bolt" size={21} />
               </span>
               <div>
                 <b>{left}</b>
@@ -130,9 +129,12 @@ export default async function Dashboard({
             <div className="stat">
               <span
                 className="stat-icon"
-                style={{ background: "var(--cream-2)", color: "var(--muted)" }}
+                style={{
+                  background: isPlus ? "var(--gold-50)" : "var(--sunken)",
+                  color: isPlus ? "var(--gold-press)" : "var(--text-3)",
+                }}
               >
-                <Icon name="crown" size={20} />
+                <Icon name="crown" size={21} />
               </span>
               <div>
                 <b style={{ textTransform: "capitalize" }}>{profile.plan}</b>
@@ -142,14 +144,14 @@ export default async function Dashboard({
           </div>
 
           {progress ? (
-            <Link href={`/essays/${progress.id}`} className="card card-lift" style={{ padding: 20 }}>
-              <div className="spread" style={{ gap: 24, flexWrap: "wrap" }}>
-                <div className="stack" style={{ gap: 4, minWidth: 150 }}>
+            <Link href={`/essays/${progress.id}`} className="card card-tap card-pad">
+              <div className="spread wrap" style={{ gap: "var(--s6)" }}>
+                <div className="stack g2" style={{ minWidth: 170 }}>
                   <span className="label">Progress</span>
                   <span className="h3">{progress.title}</span>
                   <span className="tiny">across {progress.bars.length} evaluations</span>
                 </div>
-                <div className="bars" style={{ flex: 1, minWidth: 160, height: 62 }}>
+                <div className="bars grow" style={{ height: 76, minWidth: 180 }}>
                   {progress.bars.map((s, i) => {
                     const last = i === progress!.bars.length - 1;
                     return (
@@ -158,30 +160,29 @@ export default async function Dashboard({
                         className="bar"
                         title={`${Math.round(s)}`}
                         style={{
-                          height: `${Math.max(s, 5)}%`,
-                          background: last ? tierForScore(s).color : "var(--cream-2)",
+                          height: `${Math.max(s, 6)}%`,
+                          background: last ? tierForScore(s).color : "var(--n-200)",
                         }}
                       />
                     );
                   })}
                 </div>
                 {progress.delta != null ? (
-                  <div className="stack" style={{ gap: 2, alignItems: "flex-end" }}>
+                  <div className="stack g1" style={{ alignItems: "flex-end" }}>
                     <span
-                      className="h2 num"
+                      className="h1 num"
                       style={{
-                        color:
-                          progress.delta >= 0 ? "var(--green-ink)" : "var(--red-ink)",
+                        color: progress.delta >= 0 ? "var(--green-ink)" : "var(--red-ink)",
                         display: "flex",
                         alignItems: "center",
                         gap: 4,
                       }}
                     >
-                      {progress.delta >= 0 ? <Icon name="arrowUp" size={17} /> : null}
+                      {progress.delta >= 0 ? <Icon name="arrowUp" size={20} /> : null}
                       {progress.delta >= 0 ? "+" : ""}
-                      {progress.delta} pts
+                      {progress.delta}
                     </span>
-                    <span className="tiny">since draft 1</span>
+                    <span className="tiny">points since draft 1</span>
                   </div>
                 ) : null}
               </div>
@@ -196,17 +197,22 @@ export default async function Dashboard({
               const band = done ? bandFromElo(latestEval!.elo!, latestEval!.ci!) : null;
               const exact = done ? eloToScore(latestEval!.elo!) : null;
               const tier = band ? tierForBand(band.low, band.high) : null;
+              const display = done
+                ? isPlus
+                  ? exact!.toFixed(1)
+                  : `${band!.low}–${band!.high}`
+                : "—";
 
               return (
-                <div key={essay.id} className="card card-lift essay-card">
+                <div key={essay.id} className="card card-tap essay-card">
                   <div className="essay-card-head">
                     <span className="essay-card-title">{essay.title}</span>
                     <span className="chip">Draft {latestDraft?.version ?? 1}</span>
                   </div>
 
                   {running ? (
-                    <div className="stack" style={{ gap: 10 }}>
-                      <span className="live-badge">
+                    <div className="stack g3">
+                      <span className="live">
                         <span className="pulse-dot" />
                         Evaluating
                       </span>
@@ -219,27 +225,45 @@ export default async function Dashboard({
                           }}
                         />
                       </div>
+                      <span className="tiny">
+                        {latestEval!.matches_done} of {latestEval!.budget} matchups judged
+                      </span>
                     </div>
                   ) : done ? (
-                    <div className="stack" style={{ gap: 10 }}>
-                      <div className="spread">
-                        <span className="essay-score" style={{ color: tier!.ink }}>
-                          {isPlus ? exact!.toFixed(1) : `${band!.low}–${band!.high}`}
-                        </span>
-                        <TierBadge tier={tier!} />
+                    <div className="stack g4">
+                      <div className="row g4">
+                        <Medal value={exact!} display={display} size={62} />
+                        <div className="stack g2">
+                          <Rank tier={tier!} />
+                          <span className="tiny">out of 100</span>
+                        </div>
                       </div>
                       <ScoreMeter
                         low={band!.low}
                         high={band!.high}
                         color={tier!.color}
                         ticks={false}
+                        small
                       />
                     </div>
                   ) : (
-                    <div className="stack" style={{ gap: 10 }}>
-                      <span className="h3" style={{ color: "var(--faint)" }}>
-                        Not scored yet
-                      </span>
+                    <div className="stack g4">
+                      <div className="row g4">
+                        <span
+                          className="medal"
+                          style={{
+                            width: 62,
+                            height: 62,
+                            background: "var(--sunken)",
+                            color: "var(--text-4)",
+                            fontSize: 22,
+                            boxShadow: "none",
+                          }}
+                        >
+                          —
+                        </span>
+                        <span className="small">Not scored yet</span>
+                      </div>
                       <div className="meter meter-sm" />
                     </div>
                   )}
@@ -252,7 +276,7 @@ export default async function Dashboard({
                     <span className="tiny">{fmtDate(essay.updated_at)}</span>
                   </div>
 
-                  <div className="essay-card-actions">
+                  <div className="essay-card-foot">
                     <Link href={`/essays/${essay.id}`} className="btn btn-plain btn-sm">
                       Review
                     </Link>
@@ -267,7 +291,7 @@ export default async function Dashboard({
 
             <Link href="/essays/new" className="add-card">
               <span className="add-card-mark">
-                <Icon name="plus" size={22} strokeWidth={2.6} />
+                <Icon name="plus" size={24} strokeWidth={2.4} />
               </span>
               <span className="h3">Score a new essay</span>
               <span className="tiny">Paste it in — we clean the formatting</span>

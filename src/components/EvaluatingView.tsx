@@ -19,15 +19,14 @@ function ts(): string {
   return new Date().toLocaleTimeString("en-US", { hour12: false });
 }
 
-const PHASE_LABEL: Record<string, string> = {
+const HEADLINE: Record<string, string> = {
   placement: "Reading your essay",
   match: "Running matchups",
   prose: "Measuring prose",
   synthesis: "Writing your review",
 };
 
-/** Ordered phases, for the checklist. */
-const STEPS: { phase: string; label: string }[] = [
+const STEPS = [
   { phase: "placement", label: "Read & place the essay" },
   { phase: "match", label: "Head-to-head matchups" },
   { phase: "prose", label: "Prose & structure" },
@@ -140,24 +139,24 @@ export default function EvaluatingView({
           ? 85
           : 92;
 
-  const currentStep = ORDER.indexOf(String(state.phase));
+  const at = ORDER.indexOf(String(state.phase));
   const paragraphs = content.split(/\n\s*\n/).filter((p) => p.trim());
 
   return (
     <div className="workspace">
       <div className="doc">
-        <div className="doc-header">
+        <div className="doc-bar">
           <div className="doc-title">
             <b>{title}</b>
             <span className="chip">Draft {version}</span>
           </div>
-          <span className="live-badge">
+          <span className="live">
             <span className="pulse-dot" />
             Evaluating
           </span>
         </div>
         <div className="essay-body">
-          <div className="essay-sheet scan-wrap">
+          <div className="sheet scan-wrap">
             <div className="scan-line" />
             <div className="essay-text">
               {paragraphs.map((p, i) => (
@@ -169,11 +168,11 @@ export default function EvaluatingView({
       </div>
 
       <div className="panel">
-        <div className="panel-body">
-          <div className="stack" style={{ gap: 5 }}>
+        <div className="panel-body on-dark-scroll">
+          <div className="stack g2">
             <span className="label">Evaluation</span>
             <span className="h2" style={{ color: "var(--on-dark)" }}>
-              {failed ? "Something went wrong" : (PHASE_LABEL[state.phase] ?? "Working…")}
+              {failed ? "Something went wrong" : (HEADLINE[state.phase] ?? "Working…")}
             </span>
             {!failed && state.phase === "match" ? (
               <span className="small" style={{ color: "var(--on-dark-3)" }}>
@@ -183,7 +182,7 @@ export default function EvaluatingView({
           </div>
 
           {failed ? (
-            <div className="stack" style={{ gap: 14 }}>
+            <div className="stack g4">
               <span className="copy" style={{ color: "var(--on-dark-2)" }}>
                 The evaluation hit an error — it wasn&rsquo;t counted against your limit.
               </span>
@@ -193,12 +192,14 @@ export default function EvaluatingView({
               {errorMsg ? (
                 <div
                   style={{
-                    background: "rgba(194,84,58,.18)",
-                    border: "1.5px solid rgba(194,84,58,.5)",
-                    borderRadius: "var(--r-sm)",
-                    padding: "11px 13px",
-                    font: "400 11.5px/1.5 var(--mono)",
-                    color: "#e9a893",
+                    background: "rgba(205,83,52,.16)",
+                    border: "1.5px solid rgba(205,83,52,.45)",
+                    borderRadius: "var(--r2)",
+                    padding: "12px 13px",
+                    fontFamily: "var(--mono)",
+                    fontSize: 11.5,
+                    lineHeight: 1.5,
+                    color: "#eda893",
                     wordBreak: "break-word",
                   }}
                 >
@@ -208,11 +209,11 @@ export default function EvaluatingView({
             </div>
           ) : (
             <>
-              <div className="page-mini">
+              <div className="mini-page">
                 <div className="read-band" />
-                {[90, 100, 96, 58, 0, 98, 92, 44, 0, 95, 70, 0, 97, 62].map((w, i) =>
+                {[92, 100, 96, 58, 0, 98, 90, 44, 0, 95, 72, 0, 97, 62].map((w, i) =>
                   w === 0 ? (
-                    <div key={i} style={{ height: 9 }} />
+                    <div key={i} style={{ height: 10 }} />
                   ) : (
                     <div key={i} className="line" style={{ width: `${w}%` }} />
                   )
@@ -220,25 +221,21 @@ export default function EvaluatingView({
               </div>
 
               <div className="steps">
-                {STEPS.map((s, i) => {
-                  const done = currentStep > i;
-                  const live = currentStep === i;
-                  return (
-                    <div
-                      key={s.phase}
-                      className={`step ${done ? "done" : ""} ${live ? "live" : ""}`}
-                    >
-                      <span className="step-mark">
-                        {done ? <Icon name="check" size={12} strokeWidth={3} /> : i + 1}
-                      </span>
-                      {s.label}
-                    </div>
-                  );
-                })}
+                {STEPS.map((s, i) => (
+                  <div
+                    key={s.phase}
+                    className={`step ${at > i ? "done" : ""} ${at === i ? "now" : ""}`}
+                  >
+                    <span className="step-mark">
+                      {at > i ? <Icon name="check" size={12} strokeWidth={3} /> : i + 1}
+                    </span>
+                    {s.label}
+                  </div>
+                ))}
               </div>
 
-              <div className="stack" style={{ gap: 8, marginTop: 4 }}>
-                <div className="meter meter-dark meter-sm">
+              <div className="stack g3">
+                <div className="meter meter-sm meter-dark">
                   <div
                     className="meter-fill"
                     style={{ left: 0, width: `${pct}%`, background: "var(--gold)" }}
@@ -255,17 +252,17 @@ export default function EvaluatingView({
           )}
 
           {/* Diagnostics, folded away until asked for. */}
-          <div className="push stack" style={{ gap: 8 }}>
+          <div className="push stack g3">
             <button className="log-toggle" onClick={() => setShowLog((v) => !v)}>
               <Icon
-                name="chevronDown"
+                name="chevron"
                 size={13}
                 style={{ transform: showLog ? "none" : "rotate(-90deg)" }}
               />
               Technical details
             </button>
             {showLog ? (
-              <div className="log-box">
+              <div className="log-box on-dark-scroll">
                 {log.length === 0 ? (
                   <span className="log-line">waiting…</span>
                 ) : (

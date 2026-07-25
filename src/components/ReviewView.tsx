@@ -7,22 +7,18 @@ import { tierForBand, tierForScore } from "@/lib/tier";
 import MarkedEssay from "./MarkedEssay";
 import InfoPopover from "./InfoPopover";
 import Icon, { type IconName } from "./Icon";
-import { ScoreMeter, ScoreRing, TierBadge, TierProgress } from "./Score";
+import { NextRank, Rank, ScoreMeter, ScoreRing } from "./Score";
 
-const KIND_META: Record<
-  MarkKind,
-  { label: string; bg: string; fg: string; icon: IconName }
-> = {
-  standout: { label: "Standout", bg: "var(--gold)", fg: "var(--ink)", icon: "star" },
+const KIND: Record<MarkKind, { label: string; bg: string; fg: string; icon: IconName }> = {
+  standout: { label: "Standout", bg: "var(--gold)", fg: "var(--n-900)", icon: "star" },
   solid: { label: "Solid", bg: "var(--green)", fg: "#fff", icon: "check" },
   weak: { label: "Weak", bg: "var(--gold-press)", fg: "#fff", icon: "flag" },
   cliche: { label: "Cliché", bg: "var(--red)", fg: "#fff", icon: "cross" },
 };
 
 function markTitle(kind: MarkKind, note: string): string {
-  const meta = KIND_META[kind];
   const first = note.split(/[.—:]/)[0]?.trim();
-  return first ? `${meta.label} — ${first}` : meta.label;
+  return first ? `${KIND[kind].label} — ${first}` : KIND[kind].label;
 }
 
 export default function ReviewView({
@@ -49,14 +45,19 @@ export default function ReviewView({
   );
   const [copied, setCopied] = useState(false);
 
-  const activeIdx = active != null && active >= 0 ? active : isPlus && marks.length ? 0 : null;
+  const idx = active != null && active >= 0 ? active : isPlus && marks.length ? 0 : null;
   const counts = view.counts;
   const band = view.band;
-  const midpoint = band ? (band.low + band.high) / 2 : 0;
-  const tier = isPlus && view.exact != null ? tierForScore(view.exact) : band ? tierForBand(band.low, band.high) : null;
+  const mid = band ? (band.low + band.high) / 2 : 0;
+  const tier =
+    isPlus && view.exact != null
+      ? tierForScore(view.exact)
+      : band
+        ? tierForBand(band.low, band.high)
+        : null;
 
   async function share() {
-    const scoreText =
+    const s =
       isPlus && view.exact != null
         ? view.exact.toFixed(1)
         : band
@@ -64,7 +65,7 @@ export default function ReviewView({
           : "";
     try {
       await navigator.clipboard.writeText(
-        `My college essay scored ${scoreText}/100 on Margin — deliberately stringent, the way admissions actually reads. ${location.origin}`
+        `My college essay scored ${s}/100 on Margin — deliberately stringent, the way admissions actually reads. ${location.origin}`
       );
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -75,14 +76,13 @@ export default function ReviewView({
 
   function step(delta: number) {
     if (!marks.length) return;
-    const cur = activeIdx ?? 0;
-    setActive((cur + delta + marks.length) % marks.length);
+    setActive(((idx ?? 0) + delta + marks.length) % marks.length);
   }
 
   return (
     <div className="workspace">
       <div className="doc">
-        <div className="doc-header">
+        <div className="doc-bar">
           <div className="doc-title">
             <b>{title}</b>
             <span className="chip">Draft {version}</span>
@@ -99,18 +99,18 @@ export default function ReviewView({
         </div>
 
         <div className="essay-body">
-          <div className="essay-sheet">
+          <div className="sheet">
             <MarkedEssay
               content={content}
               marks={marks}
               numbered={isPlus}
-              activeIdx={isPlus ? activeIdx : null}
+              activeIdx={isPlus ? idx : null}
               onMarkClick={isPlus ? (i) => setActive(i) : undefined}
             />
           </div>
         </div>
 
-        <div className="doc-footer">
+        <div className="doc-foot">
           {counts ? (
             <>
               <span className="chip chip-gold">{counts.standout} standout</span>
@@ -119,20 +119,19 @@ export default function ReviewView({
               <span className="chip chip-red">{counts.cliche} cliché</span>
             </>
           ) : null}
-          <span style={{ marginLeft: "auto", color: "var(--faint)" }}>
+          <span style={{ marginLeft: "auto", color: "var(--text-4)" }}>
             {isPlus
-              ? activeIdx != null
-                ? `Note ${activeIdx + 1} highlighted`
+              ? idx != null
+                ? `Note ${idx + 1} highlighted`
                 : "Tap a mark to inspect it"
               : "Tap a mark to see why — Plus"}
           </span>
         </div>
       </div>
 
-      {/* ---------- right panel ---------- */}
+      {/* ---------------- panel ---------------- */}
       <div className="panel">
         {isPlus ? (
-          /* Plus: exact score, channel tiles, note walkthrough. */
           <>
             <div className="panel-head">
               <div className="spread">
@@ -148,23 +147,20 @@ export default function ReviewView({
                 </span>
               </div>
 
-              <div
-                className="pop-in"
-                style={{ display: "flex", alignItems: "center", gap: 18 }}
-              >
+              <div className="row g5 pop-in">
                 <ScoreRing
                   value={view.exact ?? 0}
                   display={view.exact?.toFixed(1) ?? "—"}
-                  size={124}
+                  size={128}
                   onDark
                 />
-                <div className="stack" style={{ gap: 9, flex: 1, minWidth: 0 }}>
-                  {tier ? <TierBadge tier={tier} /> : null}
-                  <TierProgress score={view.exact ?? 0} onDark />
+                <div className="stack g3 grow">
+                  {tier ? <Rank tier={tier} /> : null}
+                  <NextRank score={view.exact ?? 0} onDark />
                 </div>
               </div>
 
-              <div className="tile-grid">
+              <div className="tiles">
                 <div className="tile">
                   <span className="label">Prose</span>
                   <b style={{ color: "var(--gold)" }}>
@@ -181,15 +177,12 @@ export default function ReviewView({
                 </div>
                 <div className="tile">
                   <span className="label">Arc</span>
-                  <div className="bars" style={{ height: 22, gap: 3 }}>
+                  <div className="bars" style={{ height: 19, gap: 3 }}>
                     {(view.arc ?? []).map((v, i) => (
                       <div
                         key={i}
                         className="bar"
-                        style={{
-                          height: `${Math.max(v, 8)}%`,
-                          background: tierForScore(v).color,
-                        }}
+                        style={{ height: `${Math.max(v, 10)}%`, background: tierForScore(v).color }}
                       />
                     ))}
                   </div>
@@ -207,12 +200,8 @@ export default function ReviewView({
 
               {view.direction_flag ? (
                 <span
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    font: "700 12px/1.5 var(--sans)",
-                    color: "#e9a893",
-                  }}
+                  className="row g2"
+                  style={{ fontSize: 12.5, fontWeight: 700, color: "#eda893", lineHeight: 1.5 }}
                 >
                   <Icon name="flag" size={15} />
                   {view.direction_flag}
@@ -220,17 +209,17 @@ export default function ReviewView({
               ) : null}
             </div>
 
-            <div className="panel-body" style={{ gap: 9 }}>
-              <div className="spread">
+            <div className="panel-body on-dark-scroll" style={{ gap: "var(--s2)" }}>
+              <div className="spread" style={{ marginBottom: 2 }}>
                 <span className="label">
-                  Notes · {activeIdx != null ? activeIdx + 1 : 1} of {marks.length}
+                  Notes · {idx != null ? idx + 1 : 1} of {marks.length}
                 </span>
-                <div className="meter meter-dark meter-sm" style={{ width: 92 }}>
+                <div className="meter meter-sm meter-dark" style={{ width: 88 }}>
                   <div
                     className="meter-fill"
                     style={{
                       left: 0,
-                      width: `${marks.length ? (((activeIdx ?? 0) + 1) / marks.length) * 100 : 0}%`,
+                      width: `${marks.length ? (((idx ?? 0) + 1) / marks.length) * 100 : 0}%`,
                       background: "var(--gold)",
                     }}
                   />
@@ -238,15 +227,12 @@ export default function ReviewView({
               </div>
 
               {marks.map((m, i) => {
-                const meta = KIND_META[m.kind];
-                if (i === activeIdx) {
+                const meta = KIND[m.kind];
+                if (i === idx) {
                   return (
                     <div key={i} className="note-card pop-in">
                       <div className="note-head">
-                        <span
-                          className="note-badge"
-                          style={{ background: meta.bg, color: meta.fg }}
-                        >
+                        <span className="note-badge" style={{ background: meta.bg, color: meta.fg }}>
                           {i + 1}
                         </span>
                         <span>{markTitle(m.kind, m.note)}</span>
@@ -277,7 +263,7 @@ export default function ReviewView({
                   <button key={i} className="note-row" onClick={() => setActive(i)}>
                     <span
                       className="note-badge"
-                      style={{ background: meta.bg, color: meta.fg, opacity: 0.85 }}
+                      style={{ background: meta.bg, color: meta.fg, opacity: 0.8 }}
                     >
                       {i + 1}
                     </span>
@@ -289,114 +275,102 @@ export default function ReviewView({
 
             <div className="panel-foot">
               <button
-                className="btn btn-onDark btn-sm"
+                className="btn btn-onDark btn-icon"
                 onClick={() => step(-1)}
                 aria-label="Previous note"
-                style={{ padding: "11px 14px" }}
               >
-                ←
+                <Icon name="arrowRight" size={17} style={{ transform: "rotate(180deg)" }} />
               </button>
-              <button className="btn btn-gold" style={{ flex: 1 }} onClick={() => step(1)}>
+              <button className="btn btn-gold grow" onClick={() => step(1)}>
                 Next note
-                <Icon name="arrowRight" size={16} />
+                <Icon name="arrowRight" size={17} />
               </button>
             </div>
           </>
         ) : (
-          /* Free: band, arc, mark counts, upgrade. */
           <>
-          <div className="panel-body">
-            <div className="spread">
-              <span className="label">Essay review</span>
-              <span style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                <span className="chip chip-onDark">Free</span>
-                <InfoPopover />
-              </span>
-            </div>
-
-            <div
-              className="stack pop-in"
-              style={{ alignItems: "center", gap: 14, padding: "4px 0" }}
-            >
-              <ScoreRing
-                value={midpoint}
-                display={band ? `${band.low}–${band.high}` : "—"}
-                label="out of 100"
-                size={158}
-                onDark
-              />
-              {tier ? <TierBadge tier={tier} onDark /> : null}
-              {band ? (
-                <ScoreMeter low={band.low} high={band.high} color={tier!.color} onDark />
-              ) : null}
-              <span className="tiny center" style={{ color: "var(--on-dark-3)" }}>
-                {view.readers_split
-                  ? "Readers split on this essay — the band reflects it."
-                  : "Plus scales in to the exact score."}
-              </span>
-            </div>
-
-            <div className="stack" style={{ gap: 8 }}>
+            <div className="panel-body on-dark-scroll">
               <div className="spread">
-                <span className="label">Essay arc</span>
-                <span className="tiny" style={{ color: "var(--on-dark-3)" }}>
-                  by paragraph
+                <span className="label">Essay review</span>
+                <span className="row g3">
+                  <span className="chip chip-onDark">Free</span>
+                  <InfoPopover />
                 </span>
               </div>
-              <div className="bars bars-dark" style={{ height: 66 }}>
-                {(view.arc ?? []).map((v, i) => (
-                  <div
-                    key={i}
-                    className="bar"
-                    title={`¶${i + 1}`}
-                    style={{ height: `${Math.max(v, 8)}%`, background: tierForScore(v).color }}
-                  />
-                ))}
+
+              <div className="stack g4 pop-in" style={{ alignItems: "center" }}>
+                <ScoreRing
+                  value={mid}
+                  display={band ? `${band.low}–${band.high}` : "—"}
+                  label="out of 100"
+                  size={166}
+                  onDark
+                />
+                {tier ? <Rank tier={tier} size="lg" onDark /> : null}
+                {band ? (
+                  <ScoreMeter low={band.low} high={band.high} color={tier!.color} onDark />
+                ) : null}
+                <span className="tiny center" style={{ color: "var(--on-dark-3)" }}>
+                  {view.readers_split
+                    ? "Readers split on this essay — the band reflects it."
+                    : "Plus scales in to the exact score."}
+                </span>
               </div>
-              <div className="bar-labels">
-                {(view.arc ?? []).map((_, i) => (
-                  <span key={i}>¶{i + 1}</span>
-                ))}
+
+              <div className="stack g3">
+                <div className="spread">
+                  <span className="label">Essay arc</span>
+                  <span className="tiny" style={{ color: "var(--on-dark-3)" }}>
+                    by paragraph
+                  </span>
+                </div>
+                <div className="bars bars-dark" style={{ height: 100 }}>
+                  {(view.arc ?? []).map((v, i) => (
+                    <div
+                      key={i}
+                      className="bar"
+                      title={`¶${i + 1} · ${Math.round(v)}`}
+                      style={{ height: `${Math.max(v, 8)}%`, background: tierForScore(v).color }}
+                    />
+                  ))}
+                </div>
+                <div className="bar-labels">
+                  {(view.arc ?? []).map((_, i) => (
+                    <span key={i}>¶{i + 1}</span>
+                  ))}
+                </div>
               </div>
+
+              {counts ? (
+                <div className="stack">
+                  {(Object.keys(KIND) as MarkKind[]).map((k) => {
+                    const meta = KIND[k];
+                    return (
+                      <div key={k} className="tally">
+                        <span className="tally-mark" style={{ background: meta.bg, color: meta.fg }}>
+                          <Icon name={meta.icon} size={13} strokeWidth={2.8} />
+                        </span>
+                        <span>{meta.label}</span>
+                        <b style={k === "standout" ? { color: "var(--gold)" } : undefined}>
+                          {counts[k]}
+                        </b>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
 
-            {counts ? (
-              <div className="stack">
-                {(Object.keys(KIND_META) as MarkKind[]).map((k) => {
-                  const meta = KIND_META[k];
-                  return (
-                    <div key={k} className="count-row">
-                      <span
-                        className="count-dot"
-                        style={{ background: meta.bg, color: meta.fg }}
-                      >
-                        <Icon name={meta.icon} size={12} strokeWidth={2.8} />
-                      </span>
-                      <span>{meta.label}</span>
-                      <span
-                        className="count-val"
-                        style={k === "standout" ? { color: "var(--gold)" } : undefined}
-                      >
-                        {counts[k]}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
-
-          </div>
-
-          <div className="panel-foot panel-foot-stack">
-            <Link href="/upgrade" className="btn btn-gold btn-block">
-              <Icon name="lock" size={16} />
-              Unlock the full review
-            </Link>
-            <button className="btn btn-onDark btn-block" onClick={share}>
-              <Icon name={copied ? "check" : "share"} size={16} />
-              {copied ? "Copied!" : "Share score"}
-            </button>
-          </div>
+            <div className="panel-foot panel-foot-stack">
+              <Link href="/upgrade" className="btn btn-gold btn-block">
+                <Icon name="lock" size={16} />
+                Unlock the full review
+              </Link>
+              <button className="btn btn-onDark btn-block" onClick={share}>
+                <Icon name={copied ? "check" : "share"} size={16} />
+                {copied ? "Copied!" : "Share score"}
+              </button>
+            </div>
           </>
         )}
       </div>

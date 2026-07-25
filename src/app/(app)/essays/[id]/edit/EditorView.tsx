@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Icon from "@/components/Icon";
+import { Medal, Rank } from "@/components/Score";
+import { tierForBand } from "@/lib/tier";
 
 interface HistoryEntry {
   version: number;
@@ -26,7 +28,7 @@ export default function EditorView({
   version: number;
   initialContent: string;
   evaluatedWordCount: number;
-  lastBand: string | null;
+  lastBand: { low: number; high: number } | null;
   hint: string | null;
   history: HistoryEntry[];
   canQuickCheck: boolean;
@@ -39,10 +41,11 @@ export default function EditorView({
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestContent = useRef(content);
-  latestContent.current = content;
+  const latest = useRef(content);
+  latest.current = content;
 
   const words = useMemo(() => content.split(/\s+/).filter(Boolean).length, [content]);
+  const tier = lastBand ? tierForBand(lastBand.low, lastBand.high) : null;
 
   const save = useCallback(async () => {
     setSaving(true);
@@ -50,7 +53,7 @@ export default function EditorView({
       const res = await fetch(`/api/essays/${essayId}/draft`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: latestContent.current }),
+        body: JSON.stringify({ content: latest.current }),
       });
       if (res.ok) {
         setSavedAt(new Date());
@@ -101,7 +104,7 @@ export default function EditorView({
   return (
     <div className="workspace">
       <div className="doc">
-        <div className="doc-header">
+        <div className="doc-bar">
           <div className="doc-title">
             <b>{title}</b>
             <span className={`chip ${dirty ? "chip-brand" : ""}`}>
@@ -117,28 +120,29 @@ export default function EditorView({
         </div>
 
         <div className="essay-body">
-          <div className="essay-sheet">
+          <div className="sheet">
             <textarea
               className="editor-area"
               value={content}
               onChange={(e) => onChange(e.target.value)}
               spellCheck
+              aria-label="Essay text"
             />
           </div>
         </div>
 
-        <div className="doc-footer">
+        <div className="doc-foot">
           <span className="num">
             {evaluatedWordCount > 0 && evaluatedWordCount !== words
               ? `${evaluatedWordCount} → ${words} words`
               : `${words} words`}
           </span>
-          <span style={{ color: "var(--border-strong)" }}>·</span>
+          <span style={{ color: "var(--line-strong)" }}>·</span>
           <span>{savedLabel}</span>
           {error ? <span className="error-text">{error}</span> : null}
           <span style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
             <button
-              className="btn btn-ghost"
+              className="btn btn-quiet"
               onClick={() => {
                 setContent(initialContent);
                 setDirty(true);
@@ -161,28 +165,30 @@ export default function EditorView({
         </div>
       </div>
 
-      <div className="panel-light">
-        <div className="stack" style={{ gap: 10 }}>
+      <div className="aside">
+        <div className="stack g4">
           <span className="label">Last evaluation</span>
-          <div className="row" style={{ gap: 14 }}>
-            <span
-              className="num"
-              style={{ font: "900 34px var(--sans)", color: "var(--brand)", letterSpacing: "-.03em" }}
-            >
-              {lastBand ?? "—"}
-            </span>
-            <span className="tiny">
-              Quick check to see
-              <br />
-              where this draft lands
-            </span>
-          </div>
+          {lastBand && tier ? (
+            <div className="row g4">
+              <Medal
+                value={(lastBand.low + lastBand.high) / 2}
+                display={`${lastBand.low}–${lastBand.high}`}
+                size={62}
+              />
+              <div className="stack g2">
+                <Rank tier={tier} />
+                <span className="tiny">out of 100</span>
+              </div>
+            </div>
+          ) : (
+            <span className="small">Not scored yet — run a full evaluation first.</span>
+          )}
         </div>
 
         {hint ? (
-          <div className="stack" style={{ gap: 9 }}>
+          <div className="stack g3">
             <span className="label">While you edit</span>
-            <div className="hint-card">
+            <div className="tip">
               <Icon name="spark" size={17} />
               <span>{hint}</span>
             </div>
@@ -190,11 +196,11 @@ export default function EditorView({
         ) : null}
 
         {history.length > 0 ? (
-          <div className="stack" style={{ gap: 9 }}>
+          <div className="stack g3">
             <span className="label">Draft history</span>
-            <div className="stack" style={{ gap: 7 }}>
+            <div className="stack g2">
               {history.map((h, i) => (
-                <div key={h.version} className={`history-row ${i === 0 ? "top" : ""}`}>
+                <div key={h.version} className={`ledger-row ${i === 0 ? "top" : ""}`}>
                   <span>Draft {h.version}</span>
                   <b>{h.band ?? "not scored"}</b>
                 </div>
@@ -204,7 +210,7 @@ export default function EditorView({
         ) : null}
 
         <div className="push">
-          <span className="tiny" style={{ display: "flex", gap: 7, alignItems: "center" }}>
+          <span className="tiny row g2">
             <Icon name="bolt" size={14} />
             Quick checks are free &amp; unlimited
           </span>

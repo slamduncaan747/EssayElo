@@ -1,10 +1,10 @@
 /**
- * Inline icon set. Stroked, 2px, rounded joins — one visual family across the
- * whole app, with no icon-font or runtime dependency.
+ * Inline icon set. One family, 24px grid, 2px rounded strokes, drawn to stay
+ * legible down to 13px. No icon font, no runtime dependency.
  */
 
 export type IconName =
-  | "stack"
+  | "essays"
   | "plus"
   | "compass"
   | "crown"
@@ -20,125 +20,125 @@ export type IconName =
   | "lock"
   | "arrowRight"
   | "arrowUp"
-  | "chevronDown"
+  | "chevron"
   | "spark"
   | "target"
   | "trophy"
   | "info"
-  | "swords";
+  | "versus";
 
 const PATHS: Record<IconName, React.ReactNode> = {
-  stack: (
+  // A stack of pages — the essay library.
+  essays: (
     <>
-      <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H15l5 5v8.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z" />
-      <path d="M14.5 4v5.5H20" />
+      <rect x="7" y="3.5" width="13" height="14" rx="2.5" />
+      <path d="M16.5 20.5h-9A3.5 3.5 0 0 1 4 17V7" />
+      <path d="M10.5 8h6M10.5 11.5h6M10.5 15h3.5" />
     </>
   ),
-  plus: (
-    <>
-      <path d="M12 5v14M5 12h14" />
-    </>
-  ),
+  plus: <path d="M12 5.5v13M5.5 12h13" />,
+  // Compass rose — "how it works".
   compass: (
     <>
       <circle cx="12" cy="12" r="8.5" />
-      <path d="M15.2 8.8 13.6 13.6 8.8 15.2l1.6-4.8z" />
+      <path d="M15.6 8.4 13.7 13.7 8.4 15.6l1.9-5.3z" />
     </>
   ),
   crown: (
     <>
-      <path d="M4 17.5 5.2 7.8l4 3.4L12 5.6l2.8 5.6 4-3.4L20 17.5z" />
-      <path d="M4.6 20h14.8" />
+      <path d="M4 17.2 5.3 7.6l4.1 3.6L12 5.4l2.6 5.8 4.1-3.6L20 17.2z" />
+      <path d="M4.9 20.2h14.2" />
     </>
   ),
-  bolt: <path d="M13.4 3 5.6 13.4h5.3L10.2 21l8.2-10.6h-5.4z" />,
+  bolt: <path d="M13.2 2.8 5.4 13.2h5.2L10.8 21.2l7.8-10.4h-5.2z" />,
   pencil: (
     <>
-      <path d="M4.5 19.5h4L20 8a2.5 2.5 0 0 0-3.5-3.5L5 16z" />
-      <path d="M14.8 5.9 18.1 9.2" />
+      <path d="M4.5 19.5h4L20 8a2.47 2.47 0 0 0-3.5-3.5L5 16z" />
+      <path d="M14.9 6 18 9.1" />
     </>
   ),
   chart: (
     <>
       <path d="M4.5 19.5h15" />
-      <path d="M7.5 16V9.5M12 16V5.5M16.5 16v-4" />
+      <path d="M7.6 16.5V11M12 16.5V5.5M16.4 16.5v-3.5" />
     </>
   ),
-  check: <path d="m5 12.6 4.6 4.4L19 6.8" />,
-  cross: <path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5" />,
+  check: <path d="m5.2 12.4 4.4 4.4 9.2-9.6" />,
+  cross: <path d="M6.8 6.8 17.2 17.2M17.2 6.8 6.8 17.2" />,
   star: (
-    <path d="m12 4 2.5 5.2 5.5.8-4 3.9 1 5.6-5-2.7-5 2.7 1-5.6-4-3.9 5.5-.8z" />
+    <path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8z" />
   ),
   flag: (
     <>
-      <path d="M6 21V4.5" />
-      <path d="M6 5h11l-2.2 3.6L17 12.5H6z" />
+      <path d="M6 21.2V4" />
+      <path d="M6 5h11.4l-2.3 3.7 2.3 3.7H6z" />
     </>
   ),
   clock: (
     <>
       <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 7.4V12l3.2 2" />
+      <path d="M12 7.2V12l3.3 2" />
     </>
   ),
   share: (
     <>
-      <path d="M12 15.5V4.2" />
-      <path d="m8.2 7.8 3.8-3.6 3.8 3.6" />
-      <path d="M5.5 13.5v5a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-5" />
+      <path d="M12 15.2V3.8" />
+      <path d="m8.3 7.4 3.7-3.6 3.7 3.6" />
+      <path d="M5.6 13v5.6a1.8 1.8 0 0 0 1.8 1.8h9.2a1.8 1.8 0 0 0 1.8-1.8V13" />
     </>
   ),
   lock: (
     <>
-      <rect x="5" y="10.5" width="14" height="9.5" rx="2.5" />
-      <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" />
+      <rect x="4.8" y="10.4" width="14.4" height="9.8" rx="2.6" />
+      <path d="M8.4 10.4V7.8a3.6 3.6 0 0 1 7.2 0v2.6" />
     </>
   ),
   arrowRight: (
     <>
-      <path d="M4.5 12h14" />
-      <path d="m13 6.5 5.5 5.5-5.5 5.5" />
+      <path d="M4.4 12h14.4" />
+      <path d="m13.2 6.4 5.6 5.6-5.6 5.6" />
     </>
   ),
   arrowUp: (
     <>
-      <path d="M12 19.5v-15" />
-      <path d="m6 10.5 6-6 6 6" />
+      <path d="M12 19.6V5.2" />
+      <path d="m6.4 10.8 5.6-5.6 5.6 5.6" />
     </>
   ),
-  chevronDown: <path d="m6.5 9.5 5.5 5.5 5.5-5.5" />,
+  chevron: <path d="m6.6 9.4 5.4 5.2 5.4-5.2" />,
   spark: (
     <>
-      <path d="M12 3.5 13.7 9l5.5 1.7-5.5 1.7L12 18l-1.7-5.6L4.8 10.7 10.3 9z" />
-      <path d="M18.5 16.2 19.2 18l1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" />
+      <path d="M11 3.4 12.6 8l4.6 1.6L12.6 11.2 11 15.8 9.4 11.2 4.8 9.6 9.4 8z" />
+      <path d="M18 15.2l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" />
     </>
   ),
   target: (
     <>
-      <circle cx="12" cy="12" r="8.5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="12" cy="12" r="0.6" fill="currentColor" />
+      <circle cx="12" cy="12" r="8.4" />
+      <circle cx="12" cy="12" r="4.2" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
     </>
   ),
   trophy: (
     <>
-      <path d="M7.5 4.5h9v5a4.5 4.5 0 0 1-9 0z" />
-      <path d="M7.5 6H5a2 2 0 0 0 2.5 3.5M16.5 6H19a2 2 0 0 1-2.5 3.5" />
-      <path d="M12 14v3.5M8.5 20h7" />
+      <path d="M7.6 4.4h8.8v4.8a4.4 4.4 0 0 1-8.8 0z" />
+      <path d="M7.6 6H5.2a2.2 2.2 0 0 0 2.6 3.8M16.4 6h2.4a2.2 2.2 0 0 1-2.6 3.8" />
+      <path d="M12 13.6v3.6M8.4 20.2h7.2" />
     </>
   ),
   info: (
     <>
       <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 11v5.2" />
-      <circle cx="12" cy="8.2" r="0.9" fill="currentColor" stroke="none" />
+      <path d="M12 11.2v5" />
+      <circle cx="12" cy="8.1" r="1" fill="currentColor" stroke="none" />
     </>
   ),
-  swords: (
+  // Two sides closing on a centre line — a head-to-head matchup.
+  versus: (
     <>
-      <path d="M4 4h3l9.5 9.5-3 3L4 7z" />
-      <path d="M20 4h-3l-4 4 3 3z" />
-      <path d="m5.5 19.5 3-3M18.5 19.5l-3-3" />
+      <path d="M3.4 6.6 8.2 12l-4.8 5.4" />
+      <path d="M20.6 6.6 15.8 12l4.8 5.4" />
+      <path d="M12 3.6v16.8" />
     </>
   ),
 };

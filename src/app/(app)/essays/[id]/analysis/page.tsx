@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Icon from "@/components/Icon";
-import { ScoreRing, TierBadge, TierProgress } from "@/components/Score";
+import { NextRank, Rank, ScoreRing } from "@/components/Score";
 import { getEssayBundle, getProfile, listEssays } from "@/lib/data";
 import { loadAnalysis } from "@/lib/analysis";
 import { exactScore } from "@/lib/engine/scale";
@@ -11,7 +11,7 @@ import { tierForScore } from "@/lib/tier";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Analysis — Margin" };
 
-const PROSE_TAG_COPY = {
+const PROSE_COPY = {
   carrying: {
     title: "Prose is carrying it",
     body: "Your writing sits well above the substance of essays scoring near you. The essay reads better than it is — which makes it fragile against a reader who sees through polish. Effort spent on more sentences has low upside; effort spent finding rarer material has high upside.",
@@ -36,7 +36,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="stack" style={{ gap: 12 }}>
+    <section className="stack g4">
       <span className="label">{label}</span>
       {title ? <h2 className="h2">{title}</h2> : null}
       {children}
@@ -66,7 +66,7 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
   const nextSteps = marks
     .filter((m) => (m.kind === "cliche" || m.kind === "weak") && m.fix)
     .slice(0, 5);
-  const proseCopy = PROSE_TAG_COPY[ev.prose_tag ?? "aligned"];
+  const prose = PROSE_COPY[ev.prose_tag ?? "aligned"];
   const counted = a.wins + a.losses;
   const score = exactScore(ev.elo!);
   const tier = tierForScore(score);
@@ -75,7 +75,7 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
     <div className="shell">
       <Sidebar plan={profile.plan} items={items} active="essays" activeEssayId={id} />
       <main className="main">
-        <div className="doc-header">
+        <div className="doc-bar">
           <div className="doc-title">
             <b>{essay.title}</b>
             <span className="chip">Draft {bundle.drafts[0]?.version ?? 1}</span>
@@ -87,35 +87,36 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
-        <div className="page" style={{ maxWidth: 820, gap: 30 }}>
+        <div className="page" style={{ maxWidth: 860 }}>
           {/* Headline */}
-          <div className="card" style={{ padding: 24, display: "flex", alignItems: "center", gap: 26, flexWrap: "wrap" }}>
-            <ScoreRing value={score} display={score.toFixed(1)} label="out of 100" size={132} />
-            <div className="stack" style={{ gap: 10, flex: 1, minWidth: 220 }}>
-              <TierBadge tier={tier} />
+          <div className="card card-pad row wrap g7">
+            <ScoreRing value={score} display={score.toFixed(1)} label="out of 100" size={136} />
+            <div className="stack g4 grow" style={{ minWidth: 230 }}>
+              <Rank tier={tier} size="lg" />
               <span className="small">
                 ±{a.ci.toFixed(1)} after {counted} counted matchup{counted === 1 ? "" : "s"}
                 {a.splits > 0 ? ` · ${a.splits} discarded as noise` : ""}
               </span>
-              <TierProgress score={score} />
+              <NextRank score={score} />
             </div>
           </div>
 
-          {/* Composition */}
           <Section label="Score composition">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "var(--s4)" }}>
               {[
                 { k: "Substance", v: score.toFixed(1), note: "this is your score", lead: true },
                 { k: "Prose", v: ev.prose_score?.toFixed(1) ?? "—", note: "measured separately" },
                 { k: "Structure", v: ev.structure_score?.toFixed(1) ?? "—", note: "cohesion & arc" },
               ].map((t) => (
-                <div key={t.k} className="card" style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 4 }}>
+                <div key={t.k} className="card stack g2" style={{ padding: "var(--s5)" }}>
                   <span className="label">{t.k}</span>
                   <b
                     className="num"
                     style={{
-                      font: "900 26px var(--sans)",
+                      fontSize: 28,
+                      fontWeight: 900,
                       color: t.lead ? tier.ink : "var(--text)",
+                      lineHeight: 1.1,
                     }}
                   >
                     {t.v}
@@ -125,22 +126,20 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
               ))}
             </div>
             <p className="small">
-              Only substance is your score. Prose and structure are measured on separate channels
-              and never move it — they tell you where effort pays off.
+              Only substance is your score. Prose and structure are measured on separate
+              channels and never move it — they tell you where effort pays off.
             </p>
           </Section>
 
-          {/* Reliance check */}
-          <Section label="Reliance check" title={proseCopy.title}>
-            <p className="copy">{proseCopy.body}</p>
+          <Section label="Reliance check" title={prose.title}>
+            <p className="copy">{prose.body}</p>
           </Section>
 
-          {/* Match record */}
           <Section label="Match record">
-            <div className="stat-row">
+            <div className="stats">
               <div className="stat">
-                <span className="stat-icon" style={{ background: "var(--green-soft)", color: "var(--green-ink)" }}>
-                  <Icon name="check" size={20} strokeWidth={2.6} />
+                <span className="stat-icon" style={{ background: "var(--green-50)", color: "var(--green-ink)" }}>
+                  <Icon name="check" size={21} strokeWidth={2.6} />
                 </span>
                 <div>
                   <b>{a.wins}</b>
@@ -148,8 +147,8 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
                 </div>
               </div>
               <div className="stat">
-                <span className="stat-icon" style={{ background: "var(--red-soft)", color: "var(--red-ink)" }}>
-                  <Icon name="cross" size={20} strokeWidth={2.6} />
+                <span className="stat-icon" style={{ background: "var(--red-50)", color: "var(--red-ink)" }}>
+                  <Icon name="cross" size={21} strokeWidth={2.6} />
                 </span>
                 <div>
                   <b>{a.losses}</b>
@@ -158,8 +157,8 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
               </div>
               {a.strongestBeaten != null ? (
                 <div className="stat">
-                  <span className="stat-icon" style={{ background: "var(--gold-soft)", color: "var(--gold-press)" }}>
-                    <Icon name="trophy" size={20} />
+                  <span className="stat-icon" style={{ background: "var(--gold-50)", color: "var(--gold-press)" }}>
+                    <Icon name="trophy" size={21} />
                   </span>
                   <div>
                     <b>{a.strongestBeaten}</b>
@@ -169,8 +168,8 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
               ) : null}
               {a.weakestLostTo != null ? (
                 <div className="stat">
-                  <span className="stat-icon" style={{ background: "var(--cream-2)", color: "var(--muted)" }}>
-                    <Icon name="flag" size={20} />
+                  <span className="stat-icon" style={{ background: "var(--sunken)", color: "var(--text-3)" }}>
+                    <Icon name="flag" size={21} />
                   </span>
                   <div>
                     <b>{a.weakestLostTo}</b>
@@ -181,18 +180,17 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
             </div>
 
             {a.trajectory.length > 1 ? (
-              <div className="card" style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 9 }}>
+              <div className="card card-pad stack g3">
                 <span className="label">Rating by matchup</span>
-                <div className="bars" style={{ height: 66 }}>
+                <div className="bars" style={{ height: 78 }}>
                   {a.trajectory.map((s, i) => (
                     <div
                       key={i}
                       className="bar"
                       title={`after match ${i + 1}: ${s.toFixed(1)}`}
                       style={{
-                        height: `${Math.max(s, 5)}%`,
-                        background:
-                          i === a.trajectory.length - 1 ? tier.color : "var(--cream-2)",
+                        height: `${Math.max(s, 6)}%`,
+                        background: i === a.trajectory.length - 1 ? tier.color : "var(--n-200)",
                       }}
                     />
                   ))}
@@ -201,35 +199,35 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
               </div>
             ) : null}
 
-            <div className="stack" style={{ gap: 7 }}>
+            <div className="stack g2">
               {a.records.map((r) => (
-                <div key={r.round} className="record-row">
+                <div key={r.round} className="record">
                   <span
                     className="record-flag"
                     style={{
                       background:
                         r.winner === "user"
-                          ? "var(--green-soft)"
+                          ? "var(--green-50)"
                           : r.winner === "opponent"
-                            ? "var(--red-soft)"
-                            : "var(--cream-2)",
+                            ? "var(--red-50)"
+                            : "var(--sunken)",
                       color:
                         r.winner === "user"
                           ? "var(--green-ink)"
                           : r.winner === "opponent"
                             ? "var(--red-ink)"
-                            : "var(--muted)",
+                            : "var(--text-3)",
                     }}
                   >
                     {r.winner === "user" ? "WON" : r.winner === "opponent" ? "LOST" : "SPLIT"}
                   </span>
-                  <span className="num" style={{ color: "var(--muted)", fontWeight: 800 }}>
+                  <span className="num" style={{ color: "var(--text-3)", fontWeight: 800 }}>
                     {r.oppScore}
                   </span>
                   <span>
                     {r.differentiator || "—"}
                     {r.offAxis ? (
-                      <em style={{ color: "var(--faint)" }}> · discounted (off-axis)</em>
+                      <em style={{ color: "var(--text-4)" }}> · discounted (off-axis)</em>
                     ) : null}
                   </span>
                 </div>
@@ -239,10 +237,10 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
 
           {a.clusters.wins.length > 0 ? (
             <Section label="What's working" title="Recurring reasons you won">
-              <div className="stack" style={{ gap: 8 }}>
+              <div className="stack g3">
                 {a.clusters.wins.map((w, i) => (
                   <div key={i} className="feat">
-                    <Icon name="check" size={17} strokeWidth={2.6} style={{ color: "var(--green)" }} />
+                    <Icon name="check" size={18} strokeWidth={2.6} style={{ color: "var(--green)" }} />
                     {w}
                   </div>
                 ))}
@@ -252,10 +250,10 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
 
           {a.clusters.losses.length > 0 ? (
             <Section label="What's holding it back" title="Recurring reasons you lost">
-              <div className="stack" style={{ gap: 8 }}>
+              <div className="stack g3">
                 {a.clusters.losses.map((l, i) => (
                   <div key={i} className="feat">
-                    <Icon name="flag" size={17} strokeWidth={2.4} style={{ color: "var(--red)" }} />
+                    <Icon name="flag" size={18} strokeWidth={2.4} style={{ color: "var(--red)" }} />
                     {l}
                   </div>
                 ))}
@@ -265,7 +263,7 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
 
           {a.clusters.producibility.length > 0 ? (
             <Section label="How rare is your material">
-              <div className="card" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div className="card card-pad stack g3">
                 <p className="copy">
                   Readers estimated that{" "}
                   <b style={{ color: "var(--brand)" }}>{a.clusters.producibility[0]}</b> other
@@ -273,8 +271,8 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
                 </p>
                 {a.clusters.metPersonMoments.length > 0 ? (
                   <p className="small">
-                    A real person first became visible at: &ldquo;{a.clusters.metPersonMoments[0]}
-                    &rdquo;
+                    A real person first became visible at: &ldquo;
+                    {a.clusters.metPersonMoments[0]}&rdquo;
                   </p>
                 ) : null}
                 {a.clusters.wastedOpportunities.length > 0 ? (
@@ -288,9 +286,9 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
 
           {nextSteps.length > 0 ? (
             <Section label="Next steps" title="Ordered by estimated impact">
-              <div className="stack" style={{ gap: 10 }}>
+              <div className="stack g3">
                 {nextSteps.map((m, i) => (
-                  <div key={i} className="card" style={{ padding: "16px 18px", display: "flex", gap: 14 }}>
+                  <div key={i} className="card card-pad" style={{ display: "flex", gap: "var(--s4)" }}>
                     <span
                       className="note-badge"
                       style={{
@@ -301,19 +299,19 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
                     >
                       {i + 1}
                     </span>
-                    <div className="stack" style={{ gap: 7, minWidth: 0 }}>
+                    <div className="stack g3">
                       <div className="spread">
                         <span className="h3">
                           {m.kind === "cliche" ? "Cut the cliché" : "Make it specific"}
                         </span>
-                        {m.impact ? (
-                          <span className="chip chip-brand num">{m.impact}</span>
-                        ) : null}
+                        {m.impact ? <span className="chip chip-brand num">{m.impact}</span> : null}
                       </div>
                       <span
                         style={{
-                          font: "400 13.5px/1.6 var(--serif)",
-                          color: "var(--muted)",
+                          fontFamily: "var(--serif)",
+                          fontSize: 14.5,
+                          lineHeight: 1.6,
+                          color: "var(--text-3)",
                           fontStyle: "italic",
                         }}
                       >

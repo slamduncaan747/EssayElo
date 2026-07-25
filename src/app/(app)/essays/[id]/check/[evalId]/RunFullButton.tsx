@@ -26,8 +26,8 @@ export default function RunFullButton({ essayId }: { essayId: string }) {
   return (
     <div className="stack" style={{ gap: 9 }}>
       {error ? <p className="error-text center">{error}</p> : null}
-      <button className="btn btn-primary btn-block btn-lg" onClick={run} disabled={busy}>
-        <Icon name="swords" size={18} />
+      <button className="btn btn-primary btn-block btn-xl" onClick={run} disabled={busy}>
+        <Icon name="versus" size={18} />
         {busy ? "Starting…" : "Run full evaluation"}
       </button>
       <span className="tiny center" style={{ display: "block" }}>

@@ -35,7 +35,7 @@ export default function RetryEvaluate({
         className="stat-icon"
         style={{ background: "var(--brand-soft)", color: "var(--brand)", width: 52, height: 52 }}
       >
-        <Icon name="swords" size={24} />
+        <Icon name="versus" size={24} />
       </span>
       {title ? <h1 className="h1">{title}</h1> : null}
       <p className="small" style={{ maxWidth: 380 }}>
@@ -43,7 +43,7 @@ export default function RetryEvaluate({
         limit — run it again whenever you&rsquo;re ready.
       </p>
       {error ? <p className="error-text">{error}</p> : null}
-      <button className="btn btn-primary btn-lg" onClick={retry} disabled={busy}>
+      <button className="btn btn-primary btn-xl" onClick={retry} disabled={busy}>
         {busy ? "Starting…" : "Run evaluation again"}
       </button>
     </div>

@@ -35,36 +35,38 @@ export default async function UpgradePage() {
     <div className="shell">
       <Sidebar plan={profile.plan} items={items} active="essays" />
       <main className="main">
-        <div className="page page-narrow" style={{ maxWidth: 940 }}>
-          <div className="stack center" style={{ alignItems: "center", gap: 12 }}>
+        <div className="page page-narrow" style={{ maxWidth: 960 }}>
+          <div className="stack g4 center" style={{ alignItems: "center" }}>
             <span className="eyebrow">
               <Icon name="crown" size={13} />
               {isPlus ? "Your plan" : "Upgrade"}
             </span>
-            <h1 className="display" style={{ fontSize: "clamp(30px,4vw,42px)" }}>
+            <h1 className="display" style={{ fontSize: "clamp(28px,3.6vw,42px)" }}>
               {isPlus
                 ? "You're on Plus."
                 : latestBand
                   ? `Your ${latestBand} is hiding a real number.`
                   : "Your score band is hiding a real number."}
             </h1>
-            <p className="lede">Plus scales in to the exact score and reviews every line.</p>
+            <p className="lede" style={{ maxWidth: 520 }}>
+              Plus scales in to the exact score and reviews every line of the essay.
+            </p>
           </div>
 
           <div className="plans">
             <div className="plan plan-free">
-              <div className="stack" style={{ gap: 4 }}>
+              <div className="stack g2">
                 <span className="h2">Free</span>
-                <span className="plan-price">$0</span>
+                <span className="price">$0</span>
               </div>
-              <div className="stack" style={{ gap: 11 }}>
+              <div className="stack g3">
                 {FREE.map((f) => (
                   <span key={f.t} className={`feat ${f.on ? "" : "feat-off"}`}>
                     <Icon
                       name={f.on ? "check" : "cross"}
                       size={17}
                       strokeWidth={2.6}
-                      style={{ color: f.on ? "var(--green)" : "var(--faint)" }}
+                      style={{ color: f.on ? "var(--green)" : "var(--text-4)" }}
                     />
                     {f.t}
                   </span>
@@ -77,32 +79,32 @@ export default async function UpgradePage() {
 
             <div className="plan plan-plus">
               <span className="plan-tag">{isPlus ? "Your plan" : "Most chosen"}</span>
-              <div className="stack" style={{ gap: 4 }}>
-                <span className="h2" style={{ color: "var(--gold)" }}>
+              <div className="stack g2">
+                <span className="h2" style={{ color: "var(--gold-hi)" }}>
                   Plus
                 </span>
-                <span className="plan-price">
+                <span className="price">
                   $12<span>/mo</span>
                 </span>
               </div>
-              <div className="stack" style={{ gap: 11 }}>
+              <div className="stack g3">
                 {PLUS.map((f) => (
                   <span
                     key={f.t}
                     className="feat"
-                    style={{ color: f.gold ? "var(--gold)" : "var(--on-dark-2)" }}
+                    style={{ color: f.gold ? "var(--gold-hi)" : "var(--on-dark-2)" }}
                   >
                     <Icon
                       name="check"
                       size={17}
                       strokeWidth={2.6}
-                      style={{ color: f.gold ? "var(--gold)" : "var(--green)" }}
+                      style={{ color: f.gold ? "var(--gold)" : "var(--green-hi)" }}
                     />
                     {f.t}
                   </span>
                 ))}
               </div>
-              <div className="push stack" style={{ gap: 9 }}>
+              <div className="push stack g3">
                 {isPlus ? <PortalButton /> : <CheckoutButton />}
                 <span className="tiny center" style={{ color: "var(--on-dark-3)" }}>
                   Cancel anytime · student pricing

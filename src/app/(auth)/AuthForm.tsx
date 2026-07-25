@@ -19,18 +19,18 @@ export default function AuthForm({
 
   return (
     <div className="auth-wrap">
-      <div style={{ width: "100%", maxWidth: 420 }}>
+      <div style={{ width: "100%", maxWidth: 430 }}>
         <Link
           href="/"
           className="logo"
-          style={{ justifyContent: "center", marginBottom: 20, padding: 0 }}
+          style={{ justifyContent: "center", marginBottom: "var(--s6)", padding: 0 }}
         >
-          <div className="logo-mark">M</div>
+          <span className="logo-mark">M</span>
           <span className="logo-name">Margin</span>
         </Link>
 
         <form action={formAction} className="auth-card">
-          <div className="stack" style={{ gap: 7 }}>
+          <div className="stack g2">
             <h1 className="h1">{isLogin ? "Welcome back" : "Score your first essay"}</h1>
             <p className="small">
               {isLogin
@@ -41,34 +41,36 @@ export default function AuthForm({
 
           {next ? <input type="hidden" name="next" value={next} /> : null}
 
-          <div className="field">
-            <label htmlFor="email">Email</label>
-            <input id="email" name="email" type="email" autoComplete="email" required />
-          </div>
-          <div className="field">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete={isLogin ? "current-password" : "new-password"}
-              minLength={isLogin ? undefined : 8}
-              required
-            />
+          <div className="stack g4">
+            <div className="field">
+              <label htmlFor="email">Email</label>
+              <input id="email" name="email" type="email" autoComplete="email" required />
+            </div>
+            <div className="field">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete={isLogin ? "current-password" : "new-password"}
+                minLength={isLogin ? undefined : 8}
+                required
+              />
+            </div>
           </div>
 
           {state.error ? <p className="error-text">{state.error}</p> : null}
           {state.message ? (
             <p
-              className="small"
-              style={{ color: "var(--green-ink)", display: "flex", gap: 8, alignItems: "center" }}
+              className="small row g2"
+              style={{ color: "var(--green-ink)" }}
             >
-              <Icon name="check" size={16} />
+              <Icon name="check" size={16} strokeWidth={2.6} />
               {state.message}
             </p>
           ) : null}
 
-          <button className="btn btn-primary btn-block btn-lg" disabled={pending}>
+          <button className="btn btn-primary btn-block btn-xl" disabled={pending}>
             {pending ? "One moment…" : isLogin ? "Log in" : "Create account"}
           </button>
 

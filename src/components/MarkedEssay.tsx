@@ -10,6 +10,13 @@ interface Range {
   idx: number;
 }
 
+const NUM_COLOR: Record<EssayMark["kind"], string> = {
+  cliche: "var(--red)",
+  weak: "var(--gold-press)",
+  solid: "var(--green-ink)",
+  standout: "var(--gold-press)",
+};
+
 /** Locate each mark's excerpt in the text (first non-overlapping occurrence). */
 function computeRanges(content: string, marks: EssayMark[]): Range[] {
   const ranges: Range[] = [];
@@ -34,7 +41,7 @@ function computeRanges(content: string, marks: EssayMark[]): Range[] {
 
 /**
  * The essay with inline marks. `activeIdx` spotlights one mark and recedes
- * the rest (premium walkthrough); `numbered` adds superscript note numbers.
+ * the rest (the Plus walkthrough); `numbered` adds superscript note numbers.
  */
 export default function MarkedEssay({
   content,
@@ -71,6 +78,7 @@ export default function MarkedEssay({
         const inPara = ranges.filter((r) => r.start < pEnd && r.end > pStart);
         const nodes: React.ReactNode[] = [];
         let cursor = pStart;
+
         for (const r of inPara) {
           const s = Math.max(r.start, pStart);
           const e = Math.min(r.end, pEnd);
@@ -83,21 +91,10 @@ export default function MarkedEssay({
               onClick={onMarkClick ? () => onMarkClick(r.idx) : undefined}
               style={onMarkClick ? { cursor: "pointer" } : undefined}
             >
-              {content.slice(s, e)}
+              {/* Wrapped so the active mark's glow colour never tints the text. */}
+              <span className="mark-text">{content.slice(s, e)}</span>
               {numbered ? (
-                <sup
-                  className="mark-num"
-                  style={{
-                    color:
-                      r.kind === "cliche"
-                        ? "var(--red)"
-                        : r.kind === "weak"
-                          ? "var(--gold-press)"
-                          : r.kind === "solid"
-                            ? "var(--green)"
-                            : "var(--gold-press)",
-                  }}
-                >
+                <sup className="mark-num" style={{ color: NUM_COLOR[r.kind] }}>
                   {" "}
                   {r.idx + 1}
                 </sup>
