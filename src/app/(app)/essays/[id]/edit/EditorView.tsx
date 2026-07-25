@@ -120,7 +120,7 @@ export default function EditorView({
         </div>
 
         <div className="essay-body">
-          <div className="sheet">
+          <div className="sheet sheet-fill">
             <textarea
               className="editor-area"
               value={content}

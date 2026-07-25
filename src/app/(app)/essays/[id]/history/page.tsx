@@ -36,7 +36,7 @@ export default async function HistoryPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <div className="page" style={{ maxWidth: 760 }}>
+        <div className="page page-narrow" style={{ maxWidth: 760 }}>
           <div className="stack g2">
             <h1 className="h1">Draft history</h1>
             <span className="small">Every version of this essay, and what it scored.</span>

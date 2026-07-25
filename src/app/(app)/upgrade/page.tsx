@@ -34,7 +34,7 @@ export default async function UpgradePage() {
   return (
     <div className="shell">
       <Sidebar plan={profile.plan} items={items} active="essays" />
-      <main className="main">
+      <main className="main main-center">
         <div className="page page-narrow" style={{ maxWidth: 960 }}>
           <div className="stack g4 center" style={{ alignItems: "center" }}>
             <span className="eyebrow">

@@ -114,7 +114,7 @@ export default async function Dashboard({
                 <b style={{ color: bestTier?.ink }}>
                   {best != null ? (isPlus ? best.toFixed(1) : Math.round(best)) : "—"}
                 </b>
-                <span>{bestTier ? bestTier.name : "Best score"}</span>
+                <span>Best score</span>
               </div>
             </div>
             <div className="stat">
@@ -144,26 +144,27 @@ export default async function Dashboard({
           </div>
 
           {progress ? (
-            <Link href={`/essays/${progress.id}`} className="card card-tap card-pad">
+            <Link href={`/essays/${progress.id}`} className="card card-tap card-pad progress-card">
               <div className="spread wrap" style={{ gap: "var(--s6)" }}>
                 <div className="stack g2" style={{ minWidth: 170 }}>
                   <span className="label">Progress</span>
                   <span className="h3">{progress.title}</span>
                   <span className="tiny">across {progress.bars.length} evaluations</span>
                 </div>
-                <div className="bars grow" style={{ height: 76, minWidth: 180 }}>
+                <div className="trend grow">
                   {progress.bars.map((s, i) => {
                     const last = i === progress!.bars.length - 1;
                     return (
-                      <div
-                        key={i}
-                        className="bar"
-                        title={`${Math.round(s)}`}
-                        style={{
-                          height: `${Math.max(s, 6)}%`,
-                          background: last ? tierForScore(s).color : "var(--n-200)",
-                        }}
-                      />
+                      <div key={i} className="trend-col">
+                        <span className={last ? "now" : undefined}>{Math.round(s)}</span>
+                        <div
+                          className="trend-bar"
+                          style={{
+                            height: `${Math.max(s, 8)}%`,
+                            background: last ? tierForScore(s).color : "var(--n-200)",
+                          }}
+                        />
+                      </div>
                     );
                   })}
                 </div>

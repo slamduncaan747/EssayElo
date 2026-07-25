@@ -87,7 +87,7 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
-        <div className="page" style={{ maxWidth: 860 }}>
+        <div className="page page-narrow" style={{ maxWidth: 860 }}>
           {/* Headline */}
           <div className="card card-pad row wrap g7">
             <ScoreRing value={score} display={score.toFixed(1)} label="out of 100" size={136} />
@@ -162,7 +162,7 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
                   </span>
                   <div>
                     <b>{a.strongestBeaten}</b>
-                    <span>Strongest beaten</span>
+                    <span>Best win</span>
                   </div>
                 </div>
               ) : null}
@@ -173,30 +173,49 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
                   </span>
                   <div>
                     <b>{a.weakestLostTo}</b>
-                    <span>Weakest lost to</span>
+                    <span>Worst loss</span>
                   </div>
                 </div>
               ) : null}
             </div>
 
             {a.trajectory.length > 1 ? (
-              <div className="card card-pad stack g3">
-                <span className="label">Rating by matchup</span>
-                <div className="bars" style={{ height: 78 }}>
-                  {a.trajectory.map((s, i) => (
-                    <div
-                      key={i}
-                      className="bar"
-                      title={`after match ${i + 1}: ${s.toFixed(1)}`}
-                      style={{
-                        height: `${Math.max(s, 6)}%`,
-                        background: i === a.trajectory.length - 1 ? tier.color : "var(--n-200)",
-                      }}
-                    />
-                  ))}
-                </div>
-                <span className="tiny">Converging as opponents cluster near your level.</span>
-              </div>
+              /* Ratings move over a narrow band, so plotting them against an
+                 absolute 0–100 axis renders a flat wall. Scale to the run's own
+                 range and label the endpoints so it stays honest. */
+              (() => {
+                const lo = Math.min(...a.trajectory);
+                const hi = Math.max(...a.trajectory);
+                const span = hi - lo || 1;
+                return (
+                  <div className="card card-pad stack g3">
+                    <div className="spread">
+                      <span className="label">Rating by matchup</span>
+                      <span className="tiny num">
+                        {lo.toFixed(1)} → {hi.toFixed(1)}
+                      </span>
+                    </div>
+                    <div className="bars" style={{ height: 84 }}>
+                      {a.trajectory.map((s, i) => (
+                        <div
+                          key={i}
+                          className="bar"
+                          title={`after match ${i + 1}: ${s.toFixed(1)}`}
+                          style={{
+                            height: `${18 + ((s - lo) / span) * 82}%`,
+                            background:
+                              i === a.trajectory.length - 1 ? tier.color : "var(--n-200)",
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <span className="tiny">
+                      Scaled to this run&rsquo;s range · converging as opponents cluster near
+                      your level.
+                    </span>
+                  </div>
+                );
+              })()
             ) : null}
 
             <div className="stack g2">
