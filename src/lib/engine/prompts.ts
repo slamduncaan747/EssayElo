@@ -313,3 +313,25 @@ export const SYNTHESIS_SCHEMA = {
   required: ["arc", "marks", "biggest_positive", "biggest_detractor", "structure_score"],
   additionalProperties: false,
 } as const;
+
+/**
+ * Compact schema hint for JSON-mode providers — see COMPARE_BATCH_HINT. This
+ * call already carries the full essay plus clustered evidence, so the full
+ * JSON Schema on top of that risked overflowing small models' per-minute
+ * token caps (e.g. Groq's 6k TPM on llama-3.1-8b-instant).
+ */
+export const SYNTHESIS_HINT = `{
+  "arc": [<0-100>, ...],   // exactly one value per paragraph, in order
+  "marks": [   // up to 14, each excerpt a VERBATIM substring of the essay
+    {
+      "excerpt": "4-25 word verbatim phrase from the essay",
+      "kind": "standout" | "solid" | "weak" | "cliche",
+      "note": "one beat, no throat-clearing",
+      "fix": "a deletion or question pointing at rarer material, or null",
+      "impact": "honest range like \\"+2-4\\", or null"
+    }
+  ],
+  "biggest_positive": "the single biggest positive, one sentence",
+  "biggest_detractor": "the single biggest detractor, one sentence",
+  "structure_score": <0-100, cohesion/arc only>
+}`;

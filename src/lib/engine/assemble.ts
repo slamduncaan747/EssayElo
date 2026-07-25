@@ -8,6 +8,7 @@
 import type { EssayMark, Harvest, MatchWinner, SynthesisResult } from "@/lib/types";
 import { isMock, synthModel, structuredCall } from "@/lib/anthropic";
 import {
+  SYNTHESIS_HINT,
   SYNTHESIS_SCHEMA,
   SYNTHESIS_SYSTEM,
   synthesisUser,
@@ -127,6 +128,7 @@ export async function synthesize(opts: {
       system: SYNTHESIS_SYSTEM,
       user: synthesisUser(opts.essay, evidence),
       schema: SYNTHESIS_SCHEMA as unknown as Record<string, unknown>,
+      schemaHint: SYNTHESIS_HINT,
       maxTokens: 4000,
       thinking: true,
     });
