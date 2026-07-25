@@ -24,7 +24,7 @@ export interface EngineConfig {
 }
 
 /** Sensible fast/quality pairs per provider. */
-function models() {
+export function models() {
   return PROVIDER === "anthropic"
     ? { fast: "claude-haiku-4-5", quality: "claude-opus-4-8" }
     : {

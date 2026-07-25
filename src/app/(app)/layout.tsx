@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/data";
 import DevBar from "@/components/DevBar";
-import { ENGINE_COOKIE, envConfig, isPreset } from "@/lib/engine/config";
+import { ENGINE_COOKIE, envConfig, isPreset, models } from "@/lib/engine/config";
 
 /**
  * Route group for the signed-in app. Auth is enforced in middleware; this
@@ -22,7 +22,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       {devTools ? (
-        <DevBar plan={profile.plan} preset={preset as "mock" | "fast" | "quality"} />
+        <DevBar
+          plan={profile.plan}
+          preset={preset as "mock" | "fast" | "quality"}
+          models={models()}
+        />
       ) : null}
       {children}
     </>

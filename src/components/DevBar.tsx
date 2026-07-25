@@ -11,11 +11,13 @@ import type { EnginePreset } from "@/lib/engine/preset";
  * ALLOW_PLAN_TOGGLE=1.
  */
 
-const ENGINES: { key: EnginePreset; label: string; hint: string }[] = [
-  { key: "mock", label: "Mock", hint: "Zero cost — deterministic, no API calls" },
-  { key: "fast", label: "Fast", hint: "llama-3.1-8b-instant — cheap, big daily quota" },
-  { key: "quality", label: "Full", hint: "llama-3.3-70b — best judgment, ~100k tokens/day" },
-];
+function engines(models: { fast: string; quality: string }) {
+  return [
+    { key: "mock" as const, label: "Mock", hint: "Zero cost — deterministic, no API calls" },
+    { key: "fast" as const, label: "Fast", hint: `${models.fast} — cheap, big daily quota` },
+    { key: "quality" as const, label: "Full", hint: `${models.quality} — best judgment` },
+  ];
+}
 
 function Group({
   label,
@@ -80,10 +82,13 @@ function Pill({
 export default function DevBar({
   plan,
   preset,
+  models,
 }: {
   plan: Plan;
   preset: EnginePreset;
+  models: { fast: string; quality: string };
 }) {
+  const ENGINES = engines(models);
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [pending, startTransition] = useTransition();
