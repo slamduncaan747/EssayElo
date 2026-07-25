@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
+import Icon from "@/components/Icon";
 
 const TYPES = [
   "Common App personal statement",
@@ -13,7 +14,7 @@ const TYPES = [
 function cleanPaste(text: string): string {
   return text
     .replace(/\r\n/g, "\n")
-    .replace(/ /g, " ")
+    .replace(/ /g, " ")
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
@@ -29,7 +30,8 @@ function detectType(text: string, words: number): (typeof TYPES)[number] {
 function suggestTitle(text: string): string {
   const first = text.split(/\n/)[0] ?? "";
   const words = first.split(/\s+/).filter(Boolean);
-  if (words.length >= 3 && words.length <= 12 && first.length <= 80) return first.replace(/[.:]$/, "");
+  if (words.length >= 3 && words.length <= 12 && first.length <= 80)
+    return first.replace(/[.:]$/, "");
   return words.slice(0, 6).join(" ").replace(/[,;.:]$/, "") || "Untitled essay";
 }
 
@@ -46,6 +48,7 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
   const areaRef = useRef<HTMLTextAreaElement>(null);
 
   const words = useMemo(() => content.split(/\s+/).filter(Boolean).length, [content]);
+  const ready = content.trim().length >= 400;
 
   function applyText(next: string, fromPaste: boolean) {
     setContent(next);
@@ -56,7 +59,7 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
 
   async function submit() {
     setError(null);
-    if (content.trim().length < 400) {
+    if (!ready) {
       setError("Paste the full essay first (at least 400 characters).");
       return;
     }
@@ -65,7 +68,11 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
       const res = await fetch("/api/essays", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, title: title || "Untitled essay", essay_type: essayType }),
+        body: JSON.stringify({
+          content,
+          title: title || "Untitled essay",
+          essay_type: essayType,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
@@ -77,12 +84,20 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
   }
 
   return (
-    <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 260px", gap: 20, alignItems: "stretch" }}>
+    <div
+      style={{
+        flex: 1,
+        display: "grid",
+        gridTemplateColumns: "minmax(0,1fr) 290px",
+        gap: 20,
+        alignItems: "stretch",
+      }}
+    >
       <div className="card" style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <textarea
           ref={areaRef}
           className="editor-area"
-          style={{ flex: 1, padding: "26px 30px", maxWidth: "none", minHeight: 420 }}
+          style={{ flex: 1, padding: "28px 32px", minHeight: 440 }}
           placeholder="Paste your essay here…"
           value={content}
           onChange={(e) => applyText(e.target.value, false)}
@@ -95,59 +110,51 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
             applyText(next, true);
           }}
         />
-        <div className="doc-footer" style={{ borderTop: "1px solid var(--border-soft)" }}>
+        <div className="doc-footer" style={{ borderTop: "2px solid var(--border)" }}>
           {pasted ? (
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />
-              Pasted — formatting cleaned
+            <span className="chip chip-green">
+              <Icon name="check" size={13} strokeWidth={3} />
+              Formatting cleaned
             </span>
           ) : (
             <span style={{ color: "var(--faint)" }}>Formatting is stripped automatically</span>
           )}
-          <span style={{ marginLeft: "auto", font: "500 12px var(--mono)" }}>{words} words</span>
+          <span style={{ marginLeft: "auto" }} className="num">
+            {words} words
+          </span>
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-          <span className="mono-label">ESSAY TYPE</span>
+      <div className="stack" style={{ gap: 18 }}>
+        <div className="stack" style={{ gap: 8 }}>
+          <span className="label">Essay type</span>
           {TYPES.map((t) => {
             const selected = essayType === t;
             return (
               <button
                 key={t}
+                className={`choice ${selected ? "selected" : ""}`}
                 onClick={() => {
                   setEssayType(t);
                   setTypeTouched(true);
                 }}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  background: selected ? "var(--cream)" : "var(--paper)",
-                  border: selected ? "1.5px solid var(--accent)" : "1px solid var(--border)",
-                  borderRadius: 10,
-                  padding: "10px 13px",
-                  font: `${selected ? 500 : 400} 12.5px var(--sans)`,
-                  color: selected ? "var(--ink)" : "var(--muted)",
-                  textAlign: "left",
-                }}
               >
                 <span>{t}</span>
-                {selected ? <span style={{ color: "var(--accent)" }}>✓</span> : null}
+                <span className="choice-check">
+                  <Icon name="check" size={12} strokeWidth={3.2} />
+                </span>
               </button>
             );
           })}
           {!typeTouched && content ? (
-            <span style={{ font: "400 11px var(--sans)", color: "var(--faint)" }}>
-              Detected — tap to change
-            </span>
+            <span className="tiny">Detected from your essay — tap to change</span>
           ) : null}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-          <span className="mono-label">TITLE</span>
+        <div className="field">
+          <label htmlFor="essay-title">Title</label>
           <input
+            id="essay-title"
             value={title}
             onChange={(e) => {
               setTitle(e.target.value);
@@ -155,30 +162,22 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
             }}
             maxLength={200}
             placeholder="Essay title"
-            style={{
-              background: "var(--white)",
-              border: "1px solid var(--border)",
-              borderRadius: 10,
-              padding: "10px 13px",
-              font: "400 13px var(--serif)",
-              outline: "none",
-            }}
           />
         </div>
 
-        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-          {error ? <p className="error-text" style={{ margin: 0 }}>{error}</p> : null}
+        <div className="push stack" style={{ gap: 9 }}>
+          {error ? <p className="error-text">{error}</p> : null}
           <button
-            className="btn btn-dark"
-            style={{ width: "100%", padding: "13px 0", fontSize: 14 }}
+            className="btn btn-primary btn-block btn-lg"
             onClick={submit}
             disabled={submitting || evalsLeft <= 0}
           >
             {submitting ? "Starting…" : "Evaluate essay"}
+            {submitting ? null : <Icon name="arrowRight" size={18} />}
           </button>
-          <span style={{ textAlign: "center", font: "400 11px var(--sans)", color: "var(--faint)" }}>
+          <span className="tiny center" style={{ display: "block" }}>
             {evalsLeft > 0
-              ? `Uses 1 of ${evalsLeft} evaluations left · ~1 min`
+              ? `Uses 1 of ${evalsLeft} evaluations left · about a minute`
               : "No evaluations left this month"}
           </span>
         </div>

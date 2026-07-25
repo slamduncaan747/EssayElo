@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import Icon from "@/components/Icon";
+import { TierBadge } from "@/components/Score";
 import { getEssayBundle, getProfile, listEssays } from "@/lib/data";
 import { bandFromElo, eloToScore } from "@/lib/engine/scale";
+import { tierForBand } from "@/lib/tier";
 
 export const dynamic = "force-dynamic";
 
@@ -32,40 +35,64 @@ export default async function HistoryPage({ params }: { params: Promise<{ id: st
             <span className="active">History</span>
           </div>
         </div>
-        <div style={{ padding: "30px 44px", maxWidth: 640 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+        <div className="page" style={{ maxWidth: 720 }}>
+          <div className="stack" style={{ gap: 4 }}>
+            <h1 className="h1">Draft history</h1>
+            <span className="small">Every version, and what it scored.</span>
+          </div>
+
+          <div className="stack" style={{ gap: 12 }}>
             {drafts.map((d) => {
               const evs = evaluations.filter((e) => e.draft_id === d.id && e.status === "done");
               return (
-                <div key={d.id} className="card" style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ font: "600 14px var(--serif)" }}>Draft {d.version}</span>
-                    <span style={{ font: "400 11px var(--sans)", color: "var(--faint)" }}>
+                <div key={d.id} className="card" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div className="spread">
+                    <span className="h2">Draft {d.version}</span>
+                    <span className="tiny">
                       {d.word_count} words ·{" "}
-                      {new Date(d.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      {new Date(d.updated_at).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
                     </span>
                   </div>
                   {evs.length === 0 ? (
-                    <span style={{ font: "400 12px var(--sans)", color: "var(--faint)" }}>Not evaluated</span>
+                    <span className="tiny" style={{ display: "flex", gap: 7, alignItems: "center" }}>
+                      <Icon name="clock" size={14} />
+                      Not evaluated
+                    </span>
                   ) : (
-                    evs.map((ev) => {
-                      const b = ev.elo != null && ev.ci != null ? bandFromElo(ev.elo, ev.ci) : null;
-                      return (
-                        <div
-                          key={ev.id}
-                          style={{ display: "flex", justifyContent: "space-between", font: "400 12.5px var(--sans)", color: "var(--muted)" }}
-                        >
-                          <span>{ev.kind === "quick" ? "Quick check" : "Full evaluation"}</span>
-                          <b style={{ color: "var(--accent)" }}>
-                            {b
-                              ? isPlus && ev.kind === "full"
-                                ? eloToScore(ev.elo!).toFixed(1)
-                                : `${b.low}–${b.high}`
-                              : "—"}
-                          </b>
-                        </div>
-                      );
-                    })
+                    <div className="stack" style={{ gap: 8 }}>
+                      {evs.map((ev) => {
+                        const b =
+                          ev.elo != null && ev.ci != null ? bandFromElo(ev.elo, ev.ci) : null;
+                        const tier = b ? tierForBand(b.low, b.high) : null;
+                        return (
+                          <div key={ev.id} className="history-row">
+                            <span
+                              style={{ display: "flex", alignItems: "center", gap: 8 }}
+                            >
+                              <Icon
+                                name={ev.kind === "quick" ? "bolt" : "swords"}
+                                size={14}
+                              />
+                              {ev.kind === "quick" ? "Quick check" : "Full evaluation"}
+                            </span>
+                            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              {tier ? <TierBadge tier={tier} showIcon={false} /> : null}
+                              <b className="num" style={{ color: tier?.ink }}>
+                                {b
+                                  ? isPlus && ev.kind === "full"
+                                    ? eloToScore(ev.elo!).toFixed(1)
+                                    : `${b.low}–${b.high}`
+                                  : "—"}
+                              </b>
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               );

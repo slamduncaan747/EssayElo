@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Instrument_Sans, Newsreader } from "next/font/google";
+import { IBM_Plex_Mono, Newsreader, Nunito } from "next/font/google";
 import "./globals.css";
 
+/** Nunito carries the interface (rounded, heavy); Newsreader is reserved for
+ *  the essay itself; Plex Mono only for diagnostics. */
+const nunito = Nunito({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800", "900"],
+  variable: "--font-nunito",
+});
 const newsreader = Newsreader({
   subsets: ["latin"],
   style: ["normal", "italic"],
   variable: "--font-newsreader",
-});
-const instrument = Instrument_Sans({
-  subsets: ["latin"],
-  variable: "--font-instrument",
 });
 const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
@@ -24,13 +27,15 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // The font variables must land on <html>: globals.css derives --sans/--serif
+  // from them inside :root, and a custom property only sees others declared in
+  // its own scope. On <body> they resolve to nothing and every font falls back.
   return (
-    <html lang="en">
-      <body
-        className={`${newsreader.variable} ${instrument.variable} ${plexMono.variable}`}
-      >
-        {children}
-      </body>
+    <html
+      lang="en"
+      className={`${nunito.variable} ${newsreader.variable} ${plexMono.variable}`}
+    >
+      <body>{children}</body>
     </html>
   );
 }

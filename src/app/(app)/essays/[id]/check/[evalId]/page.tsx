@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import Icon from "@/components/Icon";
+import { ScoreMeter, ScoreRing, TierBadge } from "@/components/Score";
 import { getEssayBundle, getProfile, listEssays } from "@/lib/data";
 import { bandFromElo } from "@/lib/engine/scale";
+import { tierForBand, tierForScore } from "@/lib/tier";
 import RunFullButton from "./RunFullButton";
 
 export const dynamic = "force-dynamic";
 
-/** Quick check result — design 11g: old band struck through → new band. */
+/** Quick check result: the old band, struck through, next to the new one. */
 export default async function QuickCheckPage({
   params,
 }: {
@@ -44,6 +47,11 @@ export default async function QuickCheckPage({
   const draft = drafts.find((d) => d.id === check.draft_id);
   const version = draft?.version ?? drafts[0]?.version ?? 1;
   const improved = oldBand ? newBand.low + newBand.high > oldBand.low + oldBand.high : true;
+  const midpoint = (newBand.low + newBand.high) / 2;
+  const tier = tierForBand(newBand.low, newBand.high);
+  const delta = oldBand
+    ? Math.round(midpoint - (oldBand.low + oldBand.high) / 2)
+    : null;
 
   const arc = check.result?.arc ?? [];
   const counts = check.result?.counts ?? null;
@@ -52,101 +60,98 @@ export default async function QuickCheckPage({
   return (
     <div className="shell">
       <Sidebar plan={profile.plan} items={items} active="essays" activeEssayId={id} />
-      <main className="main" style={{ alignItems: "center", padding: "40px 24px" }}>
-        <div style={{ width: "100%", maxWidth: 560, display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <span className="mono-label">QUICK CHECK · DRAFT {version}</span>
-              <span style={{ font: "italic 500 19px var(--serif)" }}>
-                {improved ? "Your edits moved the needle" : "This draft lands close to the last one"}
-              </span>
+      <main className="main">
+        <div className="page page-narrow" style={{ maxWidth: 620 }}>
+          <div className="spread">
+            <div className="stack" style={{ gap: 4 }}>
+              <span className="label">Quick check · draft {version}</span>
+              <h1 className="h1">
+                {improved ? "Your edits moved the needle" : "Close to your last draft"}
+              </h1>
             </div>
             <span className="chip">{essay.title}</span>
           </div>
 
-          <div className="card" style={{ background: "var(--paper)", padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18 }}>
+          <div className="card pop-in" style={{ padding: 26, display: "flex", flexDirection: "column", gap: 20 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 22,
+                flexWrap: "wrap",
+              }}
+            >
               {oldBand ? (
                 <>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                  <div className="stack center" style={{ alignItems: "center", gap: 4 }}>
                     <span
+                      className="num"
                       style={{
-                        font: "600 30px var(--serif)",
+                        font: "900 26px var(--sans)",
                         color: "var(--faint)",
                         textDecoration: "line-through",
-                        textDecorationThickness: 2,
-                        textDecorationColor: "rgba(138,77,46,.4)",
+                        textDecorationThickness: 3,
                       }}
                     >
                       {oldBand.low}–{oldBand.high}
                     </span>
-                    <span style={{ font: "500 10px var(--mono)", color: "var(--faint)" }}>BEFORE</span>
+                    <span className="label">Before</span>
                   </div>
-                  <span style={{ font: "400 22px var(--serif)", color: "var(--accent)" }}>→</span>
+                  <Icon name="arrowRight" size={22} style={{ color: "var(--faint)" }} />
                 </>
               ) : null}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                <span style={{ font: "600 44px var(--serif)", color: "var(--accent)" }}>
-                  {newBand.low}–{newBand.high}
-                </span>
-                <span style={{ font: "500 10px var(--mono)", color: "var(--accent)" }}>DRAFT {version}</span>
+              <div className="stack" style={{ alignItems: "center", gap: 10 }}>
+                <ScoreRing
+                  value={midpoint}
+                  display={`${newBand.low}–${newBand.high}`}
+                  label={`draft ${version}`}
+                  size={140}
+                />
+                <TierBadge tier={tier} />
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              <div className="track track-light">
-                {oldBand ? (
-                  <div
-                    className="track-fill"
-                    style={{
-                      left: `${oldBand.low}%`,
-                      width: `${Math.max(oldBand.high - oldBand.low, 2)}%`,
-                      background: "#c9c2b2",
-                    }}
-                  />
-                ) : null}
-                <div
-                  className="track-fill"
-                  style={{
-                    left: `${newBand.low}%`,
-                    width: `${Math.max(newBand.high - newBand.low, 2)}%`,
-                    boxShadow: "0 0 0 2px var(--paper)",
-                  }}
-                />
+            {delta != null ? (
+              <div
+                className="banner"
+                style={{
+                  justifyContent: "center",
+                  background: delta >= 0 ? "var(--green-soft)" : "var(--red-soft)",
+                  color: delta >= 0 ? "var(--green-ink)" : "var(--red-ink)",
+                }}
+              >
+                {delta >= 0 ? <Icon name="arrowUp" size={18} /> : null}
+                {delta >= 0 ? "+" : ""}
+                {delta} points since the last evaluation
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", font: "400 10px var(--mono)", color: "var(--faint)" }}>
-                <span>0</span>
-                <span>100</span>
-              </div>
-            </div>
+            ) : null}
+
+            <ScoreMeter low={newBand.low} high={newBand.high} color={tier.color} />
 
             {profile.plan === "plus" && check.result?.biggest_positive ? (
-              <div style={{ font: "400 12.5px/1.55 var(--sans)", color: "var(--body)", textAlign: "center" }}>
+              <p className="copy center">
                 {improved ? check.result.biggest_positive : check.result.biggest_detractor}
-              </div>
+              </p>
             ) : null}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div className="card" style={{ background: "var(--paper)", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
-              <span className="mono-label" style={{ letterSpacing: ".1em" }}>ESSAY ARC</span>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 36 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="card" style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <span className="label">Essay arc</span>
+              <div className="bars" style={{ height: 44 }}>
                 {arc.map((v, i) => (
                   <div
                     key={i}
-                    style={{
-                      flex: 1,
-                      height: `${Math.max(v, 6)}%`,
-                      borderRadius: "2px 2px 0 0",
-                      background: v < 40 ? "var(--red)" : v < 65 ? "rgba(201,162,90,.7)" : "var(--gold)",
-                    }}
+                    className="bar"
+                    style={{ height: `${Math.max(v, 8)}%`, background: tierForScore(v).color }}
                   />
                 ))}
               </div>
             </div>
-            <div className="card" style={{ background: "var(--paper)", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-              <span className="mono-label" style={{ letterSpacing: ".1em" }}>MARKS</span>
-              <div style={{ display: "flex", flexDirection: "column", gap: 3, font: "400 11.5px var(--sans)", color: "var(--body)" }}>
+            <div className="card" style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <span className="label">Marks</span>
+              <div className="stack" style={{ gap: 6 }}>
                 {(["cliche", "weak", "standout"] as const).map((k) => {
                   const before = prevCounts?.[k];
                   const after = counts?.[k] ?? 0;
@@ -154,11 +159,16 @@ export default async function QuickCheckPage({
                   const changed = before != null && before !== after;
                   const good = changed && (betterDown ? after < before! : after > before!);
                   return (
-                    <div key={k} style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span>{k === "cliche" ? "Cliché" : k[0].toUpperCase() + k.slice(1)}</span>
-                      <span style={{ fontWeight: 600, color: good ? "var(--green)" : "inherit" }}>
-                        {before != null ? `${before} → ${after}` : after}
+                    <div key={k} className="spread" style={{ font: "700 12.5px var(--sans)" }}>
+                      <span style={{ color: "var(--muted)" }}>
+                        {k === "cliche" ? "Cliché" : k[0].toUpperCase() + k.slice(1)}
                       </span>
+                      <b
+                        className="num"
+                        style={{ color: good ? "var(--green-ink)" : "var(--text)" }}
+                      >
+                        {before != null ? `${before} → ${after}` : after}
+                      </b>
                     </div>
                   );
                 })}
@@ -166,12 +176,9 @@ export default async function QuickCheckPage({
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className="stack" style={{ gap: 10 }}>
             <RunFullButton essayId={id} />
-            <Link
-              href={`/essays/${id}/edit`}
-              style={{ textAlign: "center", font: "500 12px var(--sans)", color: "var(--accent)" }}
-            >
+            <Link href={`/essays/${id}/edit`} className="btn btn-ghost" style={{ alignSelf: "center" }}>
               Keep editing
             </Link>
           </div>

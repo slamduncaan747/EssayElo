@@ -15,15 +15,17 @@ export default async function NewEssayPage() {
 
   return (
     <div className="shell">
-      <Sidebar plan={profile.plan} items={items} active="drafts" />
-      <main className="main" style={{ padding: "32px 48px", gap: 18 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <span style={{ font: "600 22px var(--serif)" }}>Score an essay</span>
-          <span style={{ font: "400 13px var(--sans)", color: "var(--muted)" }}>
-            Paste it in — formatting is stripped automatically.
-          </span>
+      <Sidebar plan={profile.plan} items={items} active="drafts" evalsLeft={left} />
+      <main className="main">
+        <div className="page" style={{ flex: 1 }}>
+          <div className="stack" style={{ gap: 4 }}>
+            <h1 className="h1">Score an essay</h1>
+            <span className="small">
+              Paste it in — formatting is stripped automatically, and nothing is used for training.
+            </span>
+          </div>
+          <SubmitForm evalsLeft={left} />
         </div>
-        <SubmitForm evalsLeft={left} />
       </main>
     </div>
   );

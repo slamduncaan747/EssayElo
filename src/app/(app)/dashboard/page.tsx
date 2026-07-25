@@ -1,8 +1,11 @@
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
+import Icon from "@/components/Icon";
+import { ScoreMeter, TierBadge } from "@/components/Score";
 import { getProfile, listEssays } from "@/lib/data";
 import { supabaseServer } from "@/lib/supabase/server";
 import { bandFromElo, eloToScore } from "@/lib/engine/scale";
+import { tierForBand, tierForScore } from "@/lib/tier";
 import { fullEvalsUsedThisMonth, TIER } from "@/lib/quota";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Evaluation } from "@/lib/types";
@@ -28,12 +31,17 @@ export default async function Dashboard({
   const used = await fullEvalsUsedThisMonth(supabaseAdmin(), profile.id);
   const limit = TIER[profile.plan].evalsPerMonth;
   const left = Math.max(0, limit - used);
+  const isPlus = profile.plan === "plus";
 
-  // Progress strip: draft-history bands of the most recently updated essay.
-  const progressItem = items.find(
-    (i) => i.latestEval && i.latestEval.status === "done"
-  );
-  let progress: { title: string; bars: number[]; delta: number | null } | null = null;
+  // Best score across every finished evaluation, for the stat row.
+  const scored = items
+    .filter((i) => i.latestEval?.status === "done" && i.latestEval.elo != null)
+    .map((i) => eloToScore(i.latestEval!.elo!));
+  const best = scored.length ? Math.max(...scored) : null;
+
+  // Progress strip: draft-history of the most recently updated scored essay.
+  const progressItem = items.find((i) => i.latestEval && i.latestEval.status === "done");
+  let progress: { title: string; id: string; bars: number[]; delta: number | null } | null = null;
   if (progressItem) {
     const supabase = await supabaseServer();
     const { data: evals } = await supabase
@@ -48,7 +56,8 @@ export default async function Dashboard({
     if (scores.length > 0) {
       progress = {
         title: progressItem.essay.title,
-        bars: scores.slice(-5),
+        id: progressItem.essay.id,
+        bars: scores.slice(-6),
         delta: scores.length > 1 ? Math.round(scores[scores.length - 1] - scores[0]) : null,
       };
     }
@@ -56,169 +65,215 @@ export default async function Dashboard({
 
   return (
     <div className="shell">
-      <Sidebar plan={profile.plan} items={items} active="essays" />
-      <main className="main" style={{ padding: "30px 40px", gap: 22 }}>
-        {upgraded ? (
-          <div
-            className="card"
-            style={{
-              padding: "12px 18px",
-              font: "500 13px var(--sans)",
-              color: "var(--green)",
-              borderColor: "var(--green)",
-            }}
-          >
-            Welcome to Plus — exact scores and full line-by-line reviews are unlocked.
-          </div>
-        ) : null}
+      <Sidebar plan={profile.plan} items={items} active="essays" evalsLeft={left} />
+      <main className="main">
+        <div className="page">
+          {upgraded ? (
+            <div className="banner banner-green pop-in">
+              <Icon name="crown" size={20} />
+              Welcome to Plus — exact scores and full line-by-line reviews are unlocked.
+            </div>
+          ) : null}
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <span style={{ font: "600 22px var(--serif)" }}>Your essays</span>
-            <span style={{ font: "400 12.5px var(--sans)", color: "var(--muted)" }}>
-              {left} {profile.plan === "free" ? "free " : ""}evaluation{left === 1 ? "" : "s"} left this month
-            </span>
+          <div className="spread" style={{ flexWrap: "wrap" }}>
+            <div className="stack" style={{ gap: 3 }}>
+              <h1 className="h1">Your essays</h1>
+              <span className="small">
+                {items.length
+                  ? `${items.length} essay${items.length === 1 ? "" : "s"} · ${left} evaluation${left === 1 ? "" : "s"} left this month`
+                  : "Nothing scored yet — paste an essay to get your first number."}
+              </span>
+            </div>
+            <Link href="/essays/new" className="btn btn-primary">
+              <Icon name="plus" size={18} />
+              Score an essay
+            </Link>
           </div>
-          <Link href="/essays/new" className="btn btn-accent" style={{ padding: "11px 22px", fontSize: 13 }}>
-            + Score an essay
-          </Link>
-        </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-          {items.map(({ essay, latestDraft, latestEval }) => {
-            const done = latestEval?.status === "done" && latestEval.elo != null && latestEval.ci != null;
-            const running = latestEval?.status === "running";
-            const band = done ? bandFromElo(latestEval!.elo!, latestEval!.ci!) : null;
-            const isPlus = profile.plan === "plus";
-            return (
-              <div key={essay.id} className="card" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                  <span style={{ font: "600 15px var(--serif)" }}>{essay.title}</span>
-                  <span
-                    style={{
-                      font: "500 9.5px var(--mono)",
-                      background: "var(--chip)",
-                      color: "var(--muted)",
-                      padding: "3px 7px",
-                      borderRadius: 5,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    DRAFT {latestDraft?.version ?? 1}
-                  </span>
+          <div className="stat-row">
+            <div className="stat">
+              <span
+                className="stat-icon"
+                style={{ background: "var(--brand-soft)", color: "var(--brand)" }}
+              >
+                <Icon name="stack" size={20} />
+              </span>
+              <div>
+                <b>{items.length}</b>
+                <span>Essays</span>
+              </div>
+            </div>
+            <div className="stat">
+              <span
+                className="stat-icon"
+                style={{ background: "var(--gold-soft)", color: "var(--gold-press)" }}
+              >
+                <Icon name="trophy" size={20} />
+              </span>
+              <div>
+                <b>{best != null ? (isPlus ? best.toFixed(1) : Math.round(best)) : "—"}</b>
+                <span>Best score</span>
+              </div>
+            </div>
+            <div className="stat">
+              <span
+                className="stat-icon"
+                style={{ background: "var(--green-soft)", color: "var(--green-ink)" }}
+              >
+                <Icon name="bolt" size={20} />
+              </span>
+              <div>
+                <b>{left}</b>
+                <span>Evaluations left</span>
+              </div>
+            </div>
+            <div className="stat">
+              <span
+                className="stat-icon"
+                style={{ background: "var(--cream-2)", color: "var(--muted)" }}
+              >
+                <Icon name="crown" size={20} />
+              </span>
+              <div>
+                <b style={{ textTransform: "capitalize" }}>{profile.plan}</b>
+                <span>{isPlus ? "Exact scores on" : "Bands only"}</span>
+              </div>
+            </div>
+          </div>
+
+          {progress ? (
+            <Link href={`/essays/${progress.id}`} className="card card-lift" style={{ padding: 20 }}>
+              <div className="spread" style={{ gap: 24, flexWrap: "wrap" }}>
+                <div className="stack" style={{ gap: 4, minWidth: 150 }}>
+                  <span className="label">Progress</span>
+                  <span className="h3">{progress.title}</span>
+                  <span className="tiny">across {progress.bars.length} evaluations</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <div className="bars" style={{ flex: 1, minWidth: 160, height: 62 }}>
+                  {progress.bars.map((s, i) => {
+                    const last = i === progress!.bars.length - 1;
+                    return (
+                      <div
+                        key={i}
+                        className="bar"
+                        title={`${Math.round(s)}`}
+                        style={{
+                          height: `${Math.max(s, 5)}%`,
+                          background: last ? tierForScore(s).color : "var(--cream-2)",
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                {progress.delta != null ? (
+                  <div className="stack" style={{ gap: 2, alignItems: "flex-end" }}>
+                    <span
+                      className="h2 num"
+                      style={{
+                        color:
+                          progress.delta >= 0 ? "var(--green-ink)" : "var(--red-ink)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      {progress.delta >= 0 ? <Icon name="arrowUp" size={17} /> : null}
+                      {progress.delta >= 0 ? "+" : ""}
+                      {progress.delta} pts
+                    </span>
+                    <span className="tiny">since draft 1</span>
+                  </div>
+                ) : null}
+              </div>
+            </Link>
+          ) : null}
+
+          <div className="essay-grid">
+            {items.map(({ essay, latestDraft, latestEval }) => {
+              const done =
+                latestEval?.status === "done" && latestEval.elo != null && latestEval.ci != null;
+              const running = latestEval?.status === "running";
+              const band = done ? bandFromElo(latestEval!.elo!, latestEval!.ci!) : null;
+              const exact = done ? eloToScore(latestEval!.elo!) : null;
+              const tier = band ? tierForBand(band.low, band.high) : null;
+
+              return (
+                <div key={essay.id} className="card card-lift essay-card">
+                  <div className="essay-card-head">
+                    <span className="essay-card-title">{essay.title}</span>
+                    <span className="chip">Draft {latestDraft?.version ?? 1}</span>
+                  </div>
+
                   {running ? (
-                    <span className="eval-status">
-                      <span className="pulse-dot" />
-                      EVALUATING
-                    </span>
+                    <div className="stack" style={{ gap: 10 }}>
+                      <span className="live-badge">
+                        <span className="pulse-dot" />
+                        Evaluating
+                      </span>
+                      <div className="meter meter-sm">
+                        <div
+                          className="meter-fill"
+                          style={{
+                            left: 0,
+                            width: `${Math.round((latestEval!.matches_done / Math.max(latestEval!.budget, 1)) * 100)}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
                   ) : done ? (
-                    <span style={{ font: "600 32px/1 var(--serif)", color: "var(--accent)" }}>
-                      {isPlus ? eloToScore(latestEval!.elo!).toFixed(1) : `${band!.low}–${band!.high}`}
-                    </span>
+                    <div className="stack" style={{ gap: 10 }}>
+                      <div className="spread">
+                        <span className="essay-score" style={{ color: tier!.ink }}>
+                          {isPlus ? exact!.toFixed(1) : `${band!.low}–${band!.high}`}
+                        </span>
+                        <TierBadge tier={tier!} />
+                      </div>
+                      <ScoreMeter
+                        low={band!.low}
+                        high={band!.high}
+                        color={tier!.color}
+                        ticks={false}
+                      />
+                    </div>
                   ) : (
-                    <span style={{ font: "600 18px var(--serif)", color: "var(--faint)" }}>
-                      Not yet scored
-                    </span>
+                    <div className="stack" style={{ gap: 10 }}>
+                      <span className="h3" style={{ color: "var(--faint)" }}>
+                        Not scored yet
+                      </span>
+                      <div className="meter meter-sm" />
+                    </div>
                   )}
-                </div>
-                <div className="track track-light" style={{ height: 8 }}>
-                  {band ? (
-                    <div
-                      className="track-fill"
-                      style={{ left: `${band.low}%`, width: `${Math.max(band.high - band.low, 2)}%` }}
-                    />
-                  ) : null}
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", font: "400 11px var(--sans)", color: "var(--faint)" }}>
-                  <span>
-                    {essay.essay_type.replace(" personal statement", "")} · {latestDraft?.word_count ?? 0} words
-                  </span>
-                  <span>{fmtDate(essay.updated_at)}</span>
-                </div>
-                <div style={{ display: "flex", gap: 8, borderTop: "1px solid var(--border-soft)", paddingTop: 12 }}>
-                  <Link href={`/essays/${essay.id}`} className="btn btn-outline" style={{ flex: 1, padding: "8px 0", fontSize: 11.5, fontWeight: 500 }}>
-                    Review
-                  </Link>
-                  <Link href={`/essays/${essay.id}/edit`} className="btn btn-dark" style={{ flex: 1, padding: "8px 0", fontSize: 11.5, fontWeight: 500 }}>
-                    Edit
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
 
-          <Link
-            href="/essays/new"
-            style={{
-              border: "1.5px dashed #cfc6b3",
-              borderRadius: 14,
-              padding: 20,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              textAlign: "center",
-              minHeight: 180,
-            }}
-          >
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                background: "var(--chip)",
-                display: "grid",
-                placeItems: "center",
-                font: "600 18px var(--serif)",
-                color: "var(--accent)",
-              }}
-            >
-              +
-            </div>
-            <span style={{ font: "600 13.5px var(--sans)" }}>Score a new essay</span>
-            <span style={{ font: "400 11.5px var(--sans)", color: "var(--faint)" }}>
-              Paste or drop a doc
-            </span>
-          </Link>
-        </div>
+                  <div className="spread">
+                    <span className="tiny">
+                      {essay.essay_type.replace(" personal statement", "")} ·{" "}
+                      {latestDraft?.word_count ?? 0} words
+                    </span>
+                    <span className="tiny">{fmtDate(essay.updated_at)}</span>
+                  </div>
 
-        {progress ? (
-          <div className="card" style={{ padding: "18px 22px", display: "flex", alignItems: "center", gap: 24 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 130 }}>
-              <span className="mono-label" style={{ letterSpacing: ".1em" }}>PROGRESS</span>
-              <span style={{ font: "600 14px var(--serif)" }}>{progress.title}</span>
-            </div>
-            <div style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: 6, height: 44 }}>
-              {progress.bars.map((s, i) => (
-                <div
-                  key={i}
-                  style={{
-                    flex: 1,
-                    height: `${Math.max(s, 4)}%`,
-                    background:
-                      i === progress!.bars.length - 1 ? "var(--accent)" : i % 2 ? "#d9c9b2" : "#e9e2d2",
-                    borderRadius: "3px 3px 0 0",
-                  }}
-                />
-              ))}
-              {Array.from({ length: Math.max(0, 5 - progress.bars.length) }).map((_, i) => (
-                <div key={`e${i}`} style={{ flex: 1, height: "2%", background: "var(--chip)", borderRadius: "3px 3px 0 0" }} />
-              ))}
-            </div>
-            {progress.delta != null ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 2, textAlign: "right" }}>
-                <span style={{ font: "600 15px var(--serif)", color: "var(--accent)" }}>
-                  {progress.delta >= 0 ? "+" : ""}
-                  {progress.delta} pts
-                </span>
-                <span style={{ font: "400 11px var(--sans)", color: "var(--faint)" }}>since draft 1</span>
-              </div>
-            ) : null}
+                  <div className="essay-card-actions">
+                    <Link href={`/essays/${essay.id}`} className="btn btn-plain btn-sm">
+                      Review
+                    </Link>
+                    <Link href={`/essays/${essay.id}/edit`} className="btn btn-primary btn-sm">
+                      <Icon name="pencil" size={14} />
+                      Edit
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+
+            <Link href="/essays/new" className="add-card">
+              <span className="add-card-mark">
+                <Icon name="plus" size={22} strokeWidth={2.6} />
+              </span>
+              <span className="h3">Score a new essay</span>
+              <span className="tiny">Paste it in — we clean the formatting</span>
+            </Link>
           </div>
-        ) : null}
+        </div>
       </main>
     </div>
   );

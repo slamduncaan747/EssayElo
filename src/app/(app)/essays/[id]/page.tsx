@@ -31,7 +31,7 @@ export default async function EssayReviewPage({
   }
 
   const shell = (children: React.ReactNode) => (
-    <div className="shell">
+    <div className="shell shell-doc">
       <Sidebar plan={profile.plan} items={items} active="essays" activeEssayId={id} />
       <main className="main">{children}</main>
     </div>
@@ -58,9 +58,8 @@ export default async function EssayReviewPage({
   const latestFullDone = evaluations.find((e) => e.kind === "full" && e.status === "done");
   if (!latestFullDone) {
     return shell(
-      <div style={{ padding: "40px 48px" }}>
-        <h1 style={{ margin: "0 0 16px", font: "600 22px var(--serif)" }}>{essay.title}</h1>
-        <RetryEvaluate essayId={id} />
+      <div className="page page-narrow" style={{ maxWidth: 560 }}>
+        <RetryEvaluate essayId={id} title={essay.title} />
       </div>
     );
   }

@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import Icon from "@/components/Icon";
+import { ScoreRing, TierBadge, TierProgress } from "@/components/Score";
 import { getEssayBundle, getProfile, listEssays } from "@/lib/data";
 import { loadAnalysis } from "@/lib/analysis";
 import { exactScore } from "@/lib/engine/scale";
+import { tierForScore } from "@/lib/tier";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Analysis — Margin" };
@@ -33,9 +36,9 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <span className="mono-label">{label}</span>
-      {title ? <h2 style={{ margin: 0, font: "600 17px var(--serif)" }}>{title}</h2> : null}
+    <section className="stack" style={{ gap: 12 }}>
+      <span className="label">{label}</span>
+      {title ? <h2 className="h2">{title}</h2> : null}
       {children}
     </section>
   );
@@ -65,6 +68,8 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
     .slice(0, 5);
   const proseCopy = PROSE_TAG_COPY[ev.prose_tag ?? "aligned"];
   const counted = a.wins + a.losses;
+  const score = exactScore(ev.elo!);
+  const tier = tierForScore(score);
 
   return (
     <div className="shell">
@@ -82,122 +87,149 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
-        <div style={{ padding: "28px 44px 60px", maxWidth: 760, display: "flex", flexDirection: "column", gap: 30 }}>
+        <div className="page" style={{ maxWidth: 820, gap: 30 }}>
           {/* Headline */}
-          <div style={{ display: "flex", alignItems: "baseline", gap: 14, flexWrap: "wrap" }}>
-            <span style={{ font: "600 52px/1 var(--serif)", color: "var(--accent)" }}>
-              {exactScore(ev.elo!).toFixed(1)}
-            </span>
-            <span style={{ font: "400 13px var(--sans)", color: "var(--muted)" }}>
-              ±{a.ci.toFixed(1)} after {counted} counted matchup{counted === 1 ? "" : "s"}
-              {a.splits > 0 ? ` · ${a.splits} discarded as noise` : ""}
-            </span>
+          <div className="card" style={{ padding: 24, display: "flex", alignItems: "center", gap: 26, flexWrap: "wrap" }}>
+            <ScoreRing value={score} display={score.toFixed(1)} label="out of 100" size={132} />
+            <div className="stack" style={{ gap: 10, flex: 1, minWidth: 220 }}>
+              <TierBadge tier={tier} />
+              <span className="small">
+                ±{a.ci.toFixed(1)} after {counted} counted matchup{counted === 1 ? "" : "s"}
+                {a.splits > 0 ? ` · ${a.splits} discarded as noise` : ""}
+              </span>
+              <TierProgress score={score} />
+            </div>
           </div>
 
           {/* Composition */}
-          <Section label="SCORE COMPOSITION">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          <Section label="Score composition">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
               {[
-                { k: "Substance", v: exactScore(ev.elo!).toFixed(1), note: "what the score is" },
+                { k: "Substance", v: score.toFixed(1), note: "this is your score", lead: true },
                 { k: "Prose", v: ev.prose_score?.toFixed(1) ?? "—", note: "measured separately" },
                 { k: "Structure", v: ev.structure_score?.toFixed(1) ?? "—", note: "cohesion & arc" },
               ].map((t) => (
-                <div key={t.k} className="card" style={{ background: "var(--paper)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 3 }}>
-                  <span className="mono-label" style={{ fontSize: 9 }}>{t.k.toUpperCase()}</span>
-                  <b style={{ font: "600 24px var(--serif)", color: t.k === "Substance" ? "var(--accent)" : "var(--ink)" }}>{t.v}</b>
-                  <span style={{ font: "400 10.5px var(--sans)", color: "var(--faint)" }}>{t.note}</span>
+                <div key={t.k} className="card" style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span className="label">{t.k}</span>
+                  <b
+                    className="num"
+                    style={{
+                      font: "900 26px var(--sans)",
+                      color: t.lead ? tier.ink : "var(--text)",
+                    }}
+                  >
+                    {t.v}
+                  </b>
+                  <span className="tiny">{t.note}</span>
                 </div>
               ))}
             </div>
-            <p style={{ margin: 0, font: "400 12.5px/1.6 var(--sans)", color: "var(--muted)" }}>
-              Only substance is your score. Prose and structure are measured on separate channels and
-              never move it — they tell you where effort pays off.
+            <p className="small">
+              Only substance is your score. Prose and structure are measured on separate channels
+              and never move it — they tell you where effort pays off.
             </p>
           </Section>
 
           {/* Reliance check */}
-          <Section label="RELIANCE CHECK" title={proseCopy.title}>
-            <p style={{ margin: 0, font: "400 13.5px/1.7 var(--sans)", color: "var(--body)" }}>
-              {proseCopy.body}
-            </p>
+          <Section label="Reliance check" title={proseCopy.title}>
+            <p className="copy">{proseCopy.body}</p>
           </Section>
 
           {/* Match record */}
-          <Section label="MATCH RECORD">
-            <div style={{ display: "flex", gap: 20, alignItems: "baseline", flexWrap: "wrap" }}>
-              <span style={{ font: "600 20px var(--serif)" }}>
-                {a.wins}<span style={{ color: "var(--faint)" }}>W</span> · {a.losses}<span style={{ color: "var(--faint)" }}>L</span>
-              </span>
-              {a.strongestBeaten != null ? (
-                <span style={{ font: "400 12.5px var(--sans)", color: "var(--muted)" }}>
-                  strongest beaten <b style={{ color: "var(--accent)" }}>{a.strongestBeaten}</b>
+          <Section label="Match record">
+            <div className="stat-row">
+              <div className="stat">
+                <span className="stat-icon" style={{ background: "var(--green-soft)", color: "var(--green-ink)" }}>
+                  <Icon name="check" size={20} strokeWidth={2.6} />
                 </span>
+                <div>
+                  <b>{a.wins}</b>
+                  <span>Won</span>
+                </div>
+              </div>
+              <div className="stat">
+                <span className="stat-icon" style={{ background: "var(--red-soft)", color: "var(--red-ink)" }}>
+                  <Icon name="cross" size={20} strokeWidth={2.6} />
+                </span>
+                <div>
+                  <b>{a.losses}</b>
+                  <span>Lost</span>
+                </div>
+              </div>
+              {a.strongestBeaten != null ? (
+                <div className="stat">
+                  <span className="stat-icon" style={{ background: "var(--gold-soft)", color: "var(--gold-press)" }}>
+                    <Icon name="trophy" size={20} />
+                  </span>
+                  <div>
+                    <b>{a.strongestBeaten}</b>
+                    <span>Strongest beaten</span>
+                  </div>
+                </div>
               ) : null}
               {a.weakestLostTo != null ? (
-                <span style={{ font: "400 12.5px var(--sans)", color: "var(--muted)" }}>
-                  weakest lost to <b style={{ color: "var(--red)" }}>{a.weakestLostTo}</b>
-                </span>
+                <div className="stat">
+                  <span className="stat-icon" style={{ background: "var(--cream-2)", color: "var(--muted)" }}>
+                    <Icon name="flag" size={20} />
+                  </span>
+                  <div>
+                    <b>{a.weakestLostTo}</b>
+                    <span>Weakest lost to</span>
+                  </div>
+                </div>
               ) : null}
             </div>
 
-            {/* Rating trajectory */}
             {a.trajectory.length > 1 ? (
-              <div className="card" style={{ background: "var(--paper)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-                <span className="mono-label" style={{ fontSize: 9 }}>RATING BY MATCHUP</span>
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 54 }}>
+              <div className="card" style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 9 }}>
+                <span className="label">Rating by matchup</span>
+                <div className="bars" style={{ height: 66 }}>
                   {a.trajectory.map((s, i) => (
                     <div
                       key={i}
+                      className="bar"
                       title={`after match ${i + 1}: ${s.toFixed(1)}`}
                       style={{
-                        flex: 1,
-                        height: `${Math.max(s, 4)}%`,
-                        background: i === a.trajectory.length - 1 ? "var(--accent)" : "#d9c9b2",
-                        borderRadius: "3px 3px 0 0",
+                        height: `${Math.max(s, 5)}%`,
+                        background:
+                          i === a.trajectory.length - 1 ? tier.color : "var(--cream-2)",
                       }}
                     />
                   ))}
                 </div>
-                <span style={{ font: "400 10.5px var(--sans)", color: "var(--faint)" }}>
-                  Converging as opponents cluster near your level.
-                </span>
+                <span className="tiny">Converging as opponents cluster near your level.</span>
               </div>
             ) : null}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div className="stack" style={{ gap: 7 }}>
               {a.records.map((r) => (
-                <div
-                  key={r.round}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "58px 40px 1fr",
-                    gap: 12,
-                    alignItems: "baseline",
-                    padding: "8px 10px",
-                    borderBottom: "1px solid var(--border-soft)",
-                    font: "400 12px var(--sans)",
-                  }}
-                >
+                <div key={r.round} className="record-row">
                   <span
+                    className="record-flag"
                     style={{
-                      font: "600 10.5px var(--mono)",
+                      background:
+                        r.winner === "user"
+                          ? "var(--green-soft)"
+                          : r.winner === "opponent"
+                            ? "var(--red-soft)"
+                            : "var(--cream-2)",
                       color:
                         r.winner === "user"
-                          ? "var(--green)"
+                          ? "var(--green-ink)"
                           : r.winner === "opponent"
-                            ? "var(--red)"
-                            : "var(--faint)",
+                            ? "var(--red-ink)"
+                            : "var(--muted)",
                     }}
                   >
                     {r.winner === "user" ? "WON" : r.winner === "opponent" ? "LOST" : "SPLIT"}
                   </span>
-                  <span style={{ font: "500 11.5px var(--mono)", color: "var(--muted)" }}>
+                  <span className="num" style={{ color: "var(--muted)", fontWeight: 800 }}>
                     {r.oppScore}
                   </span>
-                  <span style={{ color: "var(--body)" }}>
+                  <span>
                     {r.differentiator || "—"}
                     {r.offAxis ? (
-                      <em style={{ color: "var(--faint)", fontSize: 11 }}> · discounted (off-axis)</em>
+                      <em style={{ color: "var(--faint)" }}> · discounted (off-axis)</em>
                     ) : null}
                   </span>
                 </div>
@@ -205,43 +237,48 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
             </div>
           </Section>
 
-          {/* Clustered evidence */}
           {a.clusters.wins.length > 0 ? (
-            <Section label="WHAT'S WORKING" title="Recurring reasons you won">
-              <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+            <Section label="What's working" title="Recurring reasons you won">
+              <div className="stack" style={{ gap: 8 }}>
                 {a.clusters.wins.map((w, i) => (
-                  <li key={i} style={{ font: "400 13.5px/1.6 var(--sans)", color: "var(--body)" }}>{w}</li>
+                  <div key={i} className="feat">
+                    <Icon name="check" size={17} strokeWidth={2.6} style={{ color: "var(--green)" }} />
+                    {w}
+                  </div>
                 ))}
-              </ul>
+              </div>
             </Section>
           ) : null}
 
           {a.clusters.losses.length > 0 ? (
-            <Section label="WHAT'S HOLDING IT BACK" title="Recurring reasons you lost">
-              <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+            <Section label="What's holding it back" title="Recurring reasons you lost">
+              <div className="stack" style={{ gap: 8 }}>
                 {a.clusters.losses.map((l, i) => (
-                  <li key={i} style={{ font: "400 13.5px/1.6 var(--sans)", color: "var(--body)" }}>{l}</li>
+                  <div key={i} className="feat">
+                    <Icon name="flag" size={17} strokeWidth={2.4} style={{ color: "var(--red)" }} />
+                    {l}
+                  </div>
                 ))}
-              </ul>
+              </div>
             </Section>
           ) : null}
 
-          {/* Producibility narrative */}
           {a.clusters.producibility.length > 0 ? (
-            <Section label="HOW RARE IS YOUR MATERIAL">
-              <div className="card" style={{ background: "var(--paper)", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
-                <p style={{ margin: 0, font: "400 13.5px/1.7 var(--sans)", color: "var(--body)" }}>
+            <Section label="How rare is your material">
+              <div className="card" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+                <p className="copy">
                   Readers estimated that{" "}
-                  <b style={{ color: "var(--accent)" }}>{a.clusters.producibility[0]}</b> other
+                  <b style={{ color: "var(--brand)" }}>{a.clusters.producibility[0]}</b> other
                   applicants could reveal what your most producible beat reveals.
                 </p>
                 {a.clusters.metPersonMoments.length > 0 ? (
-                  <p style={{ margin: 0, font: "400 13px/1.65 var(--sans)", color: "var(--muted)" }}>
-                    A real person first became visible at: “{a.clusters.metPersonMoments[0]}”
+                  <p className="small">
+                    A real person first became visible at: &ldquo;{a.clusters.metPersonMoments[0]}
+                    &rdquo;
                   </p>
                 ) : null}
                 {a.clusters.wastedOpportunities.length > 0 ? (
-                  <p style={{ margin: 0, font: "400 13px/1.65 var(--sans)", color: "var(--muted)" }}>
+                  <p className="small">
                     Squandered chance at something rarer: {a.clusters.wastedOpportunities[0]}
                   </p>
                 ) : null}
@@ -249,38 +286,57 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
             </Section>
           ) : null}
 
-          {/* Ranked next steps */}
           {nextSteps.length > 0 ? (
-            <Section label="NEXT STEPS" title="Ordered by estimated impact">
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <Section label="Next steps" title="Ordered by estimated impact">
+              <div className="stack" style={{ gap: 10 }}>
                 {nextSteps.map((m, i) => (
-                  <div key={i} className="card" style={{ background: "var(--paper)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                      <span style={{ font: "600 13px var(--sans)" }}>
-                        {m.kind === "cliche" ? "Cut the cliché" : "Make it specific"}
-                      </span>
-                      {m.impact ? (
-                        <span style={{ font: "600 11.5px var(--mono)", color: "var(--accent)", whiteSpace: "nowrap" }}>
-                          {m.impact}
-                        </span>
-                      ) : null}
-                    </div>
-                    <span style={{ font: "400 12.5px/1.6 var(--serif)", color: "var(--muted)", fontStyle: "italic" }}>
-                      “{m.excerpt}”
+                  <div key={i} className="card" style={{ padding: "16px 18px", display: "flex", gap: 14 }}>
+                    <span
+                      className="note-badge"
+                      style={{
+                        background: m.kind === "cliche" ? "var(--red)" : "var(--gold-press)",
+                        color: "#fff",
+                        marginTop: 2,
+                      }}
+                    >
+                      {i + 1}
                     </span>
-                    <span style={{ font: "400 12.5px/1.6 var(--sans)", color: "var(--body)" }}>{m.fix}</span>
+                    <div className="stack" style={{ gap: 7, minWidth: 0 }}>
+                      <div className="spread">
+                        <span className="h3">
+                          {m.kind === "cliche" ? "Cut the cliché" : "Make it specific"}
+                        </span>
+                        {m.impact ? (
+                          <span className="chip chip-brand num">{m.impact}</span>
+                        ) : null}
+                      </div>
+                      <span
+                        style={{
+                          font: "400 13.5px/1.6 var(--serif)",
+                          color: "var(--muted)",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        &ldquo;{m.excerpt}&rdquo;
+                      </span>
+                      <span className="copy">{m.fix}</span>
+                    </div>
                   </div>
                 ))}
               </div>
-              <Link href={`/essays/${id}/edit`} className="btn btn-accent" style={{ alignSelf: "flex-start", padding: "10px 20px", fontSize: 13 }}>
+              <Link
+                href={`/essays/${id}/edit`}
+                className="btn btn-primary"
+                style={{ alignSelf: "flex-start" }}
+              >
+                <Icon name="pencil" size={16} />
                 Fix in editor
               </Link>
             </Section>
           ) : null}
 
-          {/* Honest reliability disclosure */}
-          <Section label="HOW CONFIDENT IS THIS">
-            <p style={{ margin: 0, font: "400 13px/1.7 var(--sans)", color: "var(--muted)" }}>
+          <Section label="How confident is this">
+            <p className="small">
               {counted} matchup{counted === 1 ? "" : "s"} counted toward this rating
               {a.splits > 0
                 ? `, and ${a.splits} discarded because reversing the presentation order flipped the winner — pure noise.`

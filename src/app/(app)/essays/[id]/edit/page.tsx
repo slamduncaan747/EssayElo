@@ -45,7 +45,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
         : "Run a full evaluation to see where this essay stands.";
 
   return (
-    <div className="shell">
+    <div className="shell shell-doc">
       <Sidebar plan={profile.plan} items={items} active="essays" activeEssayId={id} />
       <main className="main">
         <EditorView

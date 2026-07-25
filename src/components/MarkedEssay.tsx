@@ -92,10 +92,10 @@ export default function MarkedEssay({
                       r.kind === "cliche"
                         ? "var(--red)"
                         : r.kind === "weak"
-                          ? "var(--gold-weak)"
+                          ? "var(--gold-press)"
                           : r.kind === "solid"
                             ? "var(--green)"
-                            : "var(--accent)",
+                            : "var(--gold-press)",
                   }}
                 >
                   {" "}

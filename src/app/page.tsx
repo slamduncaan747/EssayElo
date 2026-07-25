@@ -1,212 +1,189 @@
 import Link from "next/link";
+import Icon, { type IconName } from "@/components/Icon";
+import { ScoreRing, TierBadge } from "@/components/Score";
+import { TIERS, tierCeiling } from "@/lib/tier";
 
-/** Landing page — design 11a. */
+const STEPS: { n: string; icon: IconName; h: string; p: string }[] = [
+  {
+    n: "1",
+    icon: "pencil",
+    h: "Paste your essay",
+    p: "Formatting stripped, word count checked, prompt detected. Under a minute to a score.",
+  },
+  {
+    n: "2",
+    icon: "swords",
+    h: "It plays matchups",
+    p: "Your essay goes head-to-head against a calibrated pool — the same way chess ratings are earned.",
+  },
+  {
+    n: "3",
+    icon: "target",
+    h: "Fix what matters",
+    p: "Plus reviews every line: what's carrying your essay, what's dragging it, and the fixes worth points.",
+  },
+];
+
 export default function Landing() {
   return (
-    <div style={{ background: "var(--cream)", minHeight: "100vh" }}>
+    <div className="land">
       <nav className="land-nav">
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <div className="logo-mark" style={{ width: 26, height: 26, fontSize: 15 }}>
-            M
-          </div>
-          <span style={{ font: "italic 600 19px var(--serif)" }}>Margin</span>
-        </div>
+        <Link href="/" className="logo" style={{ margin: 0, padding: 0 }}>
+          <div className="logo-mark">M</div>
+          <span className="logo-name">Margin</span>
+        </Link>
         <div className="links">
           <Link href="/how-scoring-works">How scoring works</Link>
           <Link href="/upgrade">Pricing</Link>
-          <Link href="/login" style={{ color: "var(--ink)" }}>
+          <Link href="/login" style={{ color: "var(--text)" }}>
             Log in
           </Link>
-          <Link href="/signup" className="btn btn-dark" style={{ padding: "9px 18px" }}>
+          <Link href="/signup" className="btn btn-primary btn-sm">
             Score your essay
           </Link>
         </div>
       </nav>
 
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 460px",
-          gap: 48,
-          padding: "52px 56px 60px",
-          alignItems: "center",
-          maxWidth: 1200,
-          margin: "0 auto",
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <span
-            style={{
-              font: "500 11px var(--mono)",
-              letterSpacing: ".14em",
-              color: "var(--accent)",
-            }}
-          >
-            FOR STUDENTS AIMING AT THE T20
+      <section className="land-section hero">
+        <div className="stack" style={{ gap: 22 }}>
+          <span className="eyebrow">
+            <Icon name="spark" size={13} />
+            For students aiming at the T20
           </span>
-          <h1
-            style={{
-              margin: 0,
-              font: "500 52px/1.1 var(--serif)",
-              letterSpacing: "-.015em",
-            }}
-          >
+          <h1 className="display">
             Your essay has a score.
             <br />
-            <span style={{ fontStyle: "italic" }}>Most people never learn it.</span>
+            <span style={{ color: "var(--brand)" }}>Most people never learn it.</span>
           </h1>
-          <p
-            style={{
-              margin: 0,
-              font: "400 15.5px/1.65 var(--sans)",
-              color: "#6e6759",
-              maxWidth: 440,
-            }}
-          >
-            Margin evaluates your college essay against thousands of others and
-            returns a score out of 100 — deliberately stringent, the way
-            admissions actually reads.
+          <p className="lede" style={{ maxWidth: 470 }}>
+            Margin evaluates your college essay against thousands of others and returns a
+            score out of 100 — deliberately stringent, the way admissions actually reads.
           </p>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <Link href="/signup" className="btn btn-accent" style={{ padding: "13px 26px", fontSize: 14 }}>
+          <div className="row" style={{ gap: 14, flexWrap: "wrap" }}>
+            <Link href="/signup" className="btn btn-primary btn-lg">
               Score your essay free
+              <Icon name="arrowRight" size={19} />
             </Link>
-            <span style={{ font: "400 12px var(--sans)", color: "var(--faint)" }}>
-              3 free evaluations · no card
-            </span>
+            <span className="small">3 free evaluations · no card</span>
           </div>
-          <div
-            style={{
-              display: "flex",
-              gap: 26,
-              paddingTop: 8,
-              font: "400 12px var(--sans)",
-              color: "var(--muted)",
-            }}
-          >
-            <span>
-              <strong style={{ font: "600 16px var(--serif)", color: "var(--ink)" }}>
-                48,000+
-              </strong>
-              <br />
-              essays scored
-            </span>
-            <span>
-              <strong style={{ font: "600 16px var(--serif)", color: "var(--ink)" }}>
-                44.2
-              </strong>
-              <br />
-              average score
-            </span>
-            <span>
-              <strong style={{ font: "600 16px var(--serif)", color: "var(--ink)" }}>
-                0.4%
-              </strong>
-              <br />
-              ever score 80+
-            </span>
+          <div className="hero-stats">
+            <div>
+              <b>48,000+</b>
+              <span>essays scored</span>
+            </div>
+            <div>
+              <b>44.2</b>
+              <span>average score</span>
+            </div>
+            <div>
+              <b>0.4%</b>
+              <span>ever score 80+</span>
+            </div>
           </div>
         </div>
 
         {/* Score card mock */}
-        <div
-          style={{
-            background: "var(--ink)",
-            color: "var(--cream)",
-            borderRadius: 16,
-            padding: "28px 26px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 16,
-            boxShadow: "0 24px 60px rgba(40,30,15,.25)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span className="mono-label" style={{ color: "rgba(245,241,233,.45)" }}>
-              ESSAY REVIEW
-            </span>
-            <span className="pill-free">Free</span>
+        <div className="card-dark" style={{ padding: 26, display: "flex", flexDirection: "column", gap: 18 }}>
+          <div className="spread">
+            <span className="label">Essay review</span>
+            <span className="chip chip-onDark">Free</span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <span style={{ font: "600 58px/1 var(--serif)", color: "var(--gold)" }}>
-              54–63
-            </span>
-            <div className="track" style={{ width: "100%" }}>
-              <div className="track-fill" style={{ left: "54%", width: "9%" }} />
-            </div>
+          <div className="stack" style={{ alignItems: "center", gap: 13 }}>
+            <ScoreRing value={58} display="54–63" label="out of 100" size={162} onDark />
+            <TierBadge tier={TIERS[2]} onDark />
           </div>
-          <div className="arc-bars" style={{ height: 40, padding: "7px 9px", gap: 4 }}>
-            <div className="arc-bar" style={{ height: "88%", background: "var(--gold)" }} />
-            <div className="arc-bar" style={{ height: "56%", background: "rgba(201,162,90,.7)" }} />
-            <div className="arc-bar" style={{ height: "72%", background: "var(--gold)" }} />
-            <div className="arc-bar" style={{ height: "30%", background: "var(--red)" }} />
+          <div className="bars bars-dark" style={{ height: 56 }}>
+            {[88, 56, 72, 30, 64].map((h, i) => (
+              <div
+                key={i}
+                className="bar"
+                style={{
+                  height: `${h}%`,
+                  background: h < 40 ? "var(--red)" : h < 65 ? "var(--brand)" : "var(--gold)",
+                }}
+              />
+            ))}
           </div>
-          <span style={{ font: "400 12px/1.55 var(--sans)", color: "rgba(245,241,233,.6)" }}>
+          <div className="note-fix">
+            <b>Biggest detractor</b>
             &ldquo;¶4 fades at the close — the cliché is doing the damage.&rdquo;
-          </span>
+          </div>
         </div>
       </section>
 
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          borderTop: "1px solid var(--border)",
-          maxWidth: 1200,
-          margin: "0 auto",
-        }}
-      >
-        {[
-          {
-            n: "01",
-            h: "Paste your essay",
-            p: "Formatting stripped, word count checked, prompt detected. Under a minute to a score.",
-          },
-          {
-            n: "02",
-            h: "Get a stringent score",
-            p: "Out of 100, calibrated hard: 45 is a solid essay. No inflation, no participation trophies.",
-          },
-          {
-            n: "03",
-            h: "Fix what matters",
-            p: "Premium reviews every line — what's carrying your essay, what's dragging it, and the fixes worth points.",
-          },
-        ].map((s, i) => (
-          <div
-            key={s.n}
-            style={{
-              padding: "34px 40px",
-              borderRight: i < 2 ? "1px solid var(--border)" : "none",
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            <span style={{ font: "600 13px var(--mono)", color: "var(--accent)" }}>{s.n}</span>
-            <span style={{ font: "600 16px var(--serif)" }}>{s.h}</span>
-            <span style={{ font: "400 12.5px/1.6 var(--sans)", color: "var(--muted)" }}>
+      <section className="land-section how-grid">
+        {STEPS.map((s) => (
+          <div key={s.n} className="how-card">
+            <span className="how-num">
+              <Icon name={s.icon} size={19} />
+            </span>
+            <span className="h2">{s.h}</span>
+            <span className="copy" style={{ color: "var(--muted)" }}>
               {s.p}
             </span>
           </div>
         ))}
       </section>
 
-      <footer
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "20px 56px",
-          borderTop: "1px solid var(--border)",
-          font: "400 12px var(--sans)",
-          color: "var(--faint)",
-          maxWidth: 1200,
-          margin: "0 auto",
-        }}
-      >
-        <span style={{ font: "italic 600 14px var(--serif)", color: "var(--ink)" }}>Margin</span>
-        <span>Privacy · Terms · Your essays are never used for training</span>
+      <section className="land-section" style={{ paddingBottom: 64 }}>
+        <div className="stack" style={{ gap: 8, marginBottom: 20 }}>
+          <span className="label">The ladder</span>
+          <h2 className="h1">Six ranks. Almost nobody reaches the top.</h2>
+          <p className="lede">
+            45 is a genuinely well-written essay. That is the honest middle of a strong
+            applicant pool — and we keep it that way on purpose.
+          </p>
+        </div>
+        <div className="ladder">
+          {TIERS.map((t) => (
+            <div key={t.key} className="ladder-row">
+              <b style={{ color: t.ink }}>
+                {t.key === "standout" ? "80+" : `${t.min}–${tierCeiling(t) - 1}`}
+              </b>
+              <TierBadge tier={t} />
+              <span>{t.blurb}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="land-section" style={{ paddingBottom: 70 }}>
+        <div
+          className="card-dark"
+          style={{
+            padding: "38px 34px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 16,
+            textAlign: "center",
+          }}
+        >
+          <h2 className="h1" style={{ color: "var(--on-dark)" }}>
+            Find out where you actually stand.
+          </h2>
+          <p className="lede" style={{ color: "var(--on-dark-2)", maxWidth: 460 }}>
+            Three free evaluations a month. No card, no upsell wall before you see a number.
+          </p>
+          <Link href="/signup" className="btn btn-gold btn-lg">
+            Score your essay free
+            <Icon name="arrowRight" size={19} />
+          </Link>
+        </div>
+      </section>
+
+      <footer className="land-foot">
+        <div className="land-foot-inner">
+          <span className="logo" style={{ margin: 0, padding: 0, gap: 8 }}>
+            <div className="logo-mark" style={{ width: 26, height: 26, fontSize: 13, borderRadius: 9 }}>
+              M
+            </div>
+            <span className="logo-name" style={{ fontSize: 16 }}>
+              Margin
+            </span>
+          </span>
+          <span>Privacy · Terms · Your essays are never used for training</span>
+        </div>
       </footer>
     </div>
   );

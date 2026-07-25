@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { EvaluationPhase } from "@/lib/types";
+import Icon from "./Icon";
 
 interface StepState {
   status: string;
@@ -19,17 +20,26 @@ function ts(): string {
 }
 
 const PHASE_LABEL: Record<string, string> = {
-  placement: "Reading your essay…",
-  match: "Scoring…",
-  prose: "Measuring prose…",
-  synthesis: "Finalizing…",
+  placement: "Reading your essay",
+  match: "Running matchups",
+  prose: "Measuring prose",
+  synthesis: "Writing your review",
 };
 
+/** Ordered phases, for the checklist. */
+const STEPS: { phase: string; label: string }[] = [
+  { phase: "placement", label: "Read & place the essay" },
+  { phase: "match", label: "Head-to-head matchups" },
+  { phase: "prose", label: "Prose & structure" },
+  { phase: "synthesis", label: "Assemble the review" },
+];
+const ORDER = STEPS.map((s) => s.phase);
+
 /**
- * Evaluating state (design 11d): essay under a scan line, dark panel with a
- * page-miniature loader. This component *drives* the evaluation — each poll
- * advances the tournament one step, so the run survives serverless limits
- * and resumes if the tab is reopened.
+ * Evaluating state: the essay under a scan line, a dark panel with a live
+ * checklist. This component *drives* the evaluation — each poll advances the
+ * tournament one step, so the run survives serverless limits and resumes if
+ * the tab is reopened.
  */
 export default function EvaluatingView({
   evaluationId,
@@ -49,6 +59,7 @@ export default function EvaluatingView({
   const [failed, setFailed] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [log, setLog] = useState<string[]>([]);
+  const [showLog, setShowLog] = useState(false);
   const running = useRef(false);
 
   const addLog = useCallback((line: string) => {
@@ -89,7 +100,9 @@ export default function EvaluatingView({
           addLog(`… busy, another worker holds the lock (${ms}ms)`);
           await new Promise((r) => setTimeout(r, 2500));
         } else {
-          addLog(`✓ phase=${current.phase} matches=${current.matches_done}/${current.budget} (${ms}ms)`);
+          addLog(
+            `✓ phase=${current.phase} matches=${current.matches_done}/${current.budget} (${ms}ms)`
+          );
         }
       } catch (e) {
         const detail = e instanceof Error ? e.message : "network error";
@@ -127,61 +140,65 @@ export default function EvaluatingView({
           ? 85
           : 92;
 
+  const currentStep = ORDER.indexOf(String(state.phase));
   const paragraphs = content.split(/\n\s*\n/).filter((p) => p.trim());
 
   return (
     <div className="workspace">
-      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div className="doc">
         <div className="doc-header">
           <div className="doc-title">
             <b>{title}</b>
             <span className="chip">Draft {version}</span>
           </div>
-          <span className="eval-status">
+          <span className="live-badge">
             <span className="pulse-dot" />
-            EVALUATING
+            Evaluating
           </span>
         </div>
         <div className="essay-body">
-          <div className="essay-text scan-wrap" style={{ position: "relative" }}>
+          <div className="essay-sheet scan-wrap">
             <div className="scan-line" />
-            {paragraphs.map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
+            <div className="essay-text">
+              {paragraphs.map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="panel-dark">
-        <div className="panel-pad">
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span className="mono-label" style={{ letterSpacing: ".14em" }}>EVALUATION</span>
-            <span style={{ font: "italic 500 20px var(--serif)" }}>
-              {failed ? "Something went wrong" : PHASE_LABEL[state.phase] ?? "Working…"}
+      <div className="panel">
+        <div className="panel-body">
+          <div className="stack" style={{ gap: 5 }}>
+            <span className="label">Evaluation</span>
+            <span className="h2" style={{ color: "var(--on-dark)" }}>
+              {failed ? "Something went wrong" : (PHASE_LABEL[state.phase] ?? "Working…")}
             </span>
+            {!failed && state.phase === "match" ? (
+              <span className="small" style={{ color: "var(--on-dark-3)" }}>
+                {state.matches_done} of {state.budget} matchups judged
+              </span>
+            ) : null}
           </div>
 
           {failed ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ font: "400 12.5px/1.6 var(--sans)", color: "rgba(245,241,233,.7)" }}>
-                The evaluation hit an error (not counted against your limit) —{" "}
-                <button
-                  onClick={() => location.reload()}
-                  style={{ color: "var(--gold)", textDecoration: "underline" }}
-                >
-                  try again
-                </button>
-                .
-              </div>
+            <div className="stack" style={{ gap: 14 }}>
+              <span className="copy" style={{ color: "var(--on-dark-2)" }}>
+                The evaluation hit an error — it wasn&rsquo;t counted against your limit.
+              </span>
+              <button className="btn btn-gold btn-block" onClick={() => location.reload()}>
+                Try again
+              </button>
               {errorMsg ? (
                 <div
                   style={{
-                    background: "rgba(163,75,50,.18)",
-                    border: "1px solid rgba(163,75,50,.5)",
-                    borderRadius: 10,
-                    padding: "10px 12px",
+                    background: "rgba(194,84,58,.18)",
+                    border: "1.5px solid rgba(194,84,58,.5)",
+                    borderRadius: "var(--r-sm)",
+                    padding: "11px 13px",
                     font: "400 11.5px/1.5 var(--mono)",
-                    color: "#e8b7a6",
+                    color: "#e9a893",
                     wordBreak: "break-word",
                   }}
                 >
@@ -195,90 +212,74 @@ export default function EvaluatingView({
                 <div className="read-band" />
                 {[90, 100, 96, 58, 0, 98, 92, 44, 0, 95, 70, 0, 97, 62].map((w, i) =>
                   w === 0 ? (
-                    <div key={i} style={{ height: 8 }} />
+                    <div key={i} style={{ height: 9 }} />
                   ) : (
                     <div key={i} className="line" style={{ width: `${w}%` }} />
                   )
                 )}
               </div>
 
-              <div className="status-chips">
-                <span className={`status-chip ${state.phase === "placement" ? "live" : ""}`}>
-                  {state.phase === "placement" ? "structure…" : "structure ✓"}
-                </span>
-                <span className={`status-chip ${state.phase === "match" ? "live" : ""}`}>
-                  {state.phase === "match"
-                    ? `scoring ${state.matches_done}/${state.budget}…`
-                    : state.phase === "placement"
-                      ? "scoring"
-                      : "scoring ✓"}
-                </span>
-                <span
-                  className={`status-chip ${
-                    state.phase === "prose" || state.phase === "synthesis" ? "live" : ""
-                  }`}
-                >
-                  {state.phase === "synthesis" ? "finalizing…" : "prose"}
-                </span>
+              <div className="steps">
+                {STEPS.map((s, i) => {
+                  const done = currentStep > i;
+                  const live = currentStep === i;
+                  return (
+                    <div
+                      key={s.phase}
+                      className={`step ${done ? "done" : ""} ${live ? "live" : ""}`}
+                    >
+                      <span className="step-mark">
+                        {done ? <Icon name="check" size={12} strokeWidth={3} /> : i + 1}
+                      </span>
+                      {s.label}
+                    </div>
+                  );
+                })}
               </div>
 
-              <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 7 }}>
-                <div className="eval-progress">
-                  <div style={{ width: `${pct}%` }} />
+              <div className="stack" style={{ gap: 8, marginTop: 4 }}>
+                <div className="meter meter-dark meter-sm">
+                  <div
+                    className="meter-fill"
+                    style={{ left: 0, width: `${pct}%`, background: "var(--gold)" }}
+                  />
                 </div>
                 <span
-                  style={{
-                    font: "400 11px var(--mono)",
-                    color: "rgba(245,241,233,.4)",
-                    textAlign: "center",
-                  }}
+                  className="tiny center"
+                  style={{ color: "var(--on-dark-3)", display: "block" }}
                 >
-                  usually a few minutes
+                  Usually a few minutes — you can close this tab and come back.
                 </span>
               </div>
             </>
           )}
 
-          {/* TEMP DEBUG: live step log. Remove with /api/diag once healthy. */}
-          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 6 }}>
-            <span className="mono-label" style={{ letterSpacing: ".12em" }}>
-              STEP LOG
-            </span>
-            <div
-              style={{
-                background: "rgba(0,0,0,.28)",
-                borderRadius: 10,
-                padding: "10px 12px",
-                maxHeight: 200,
-                overflowY: "auto",
-                display: "flex",
-                flexDirection: "column",
-                gap: 3,
-              }}
-            >
-              {log.length === 0 ? (
-                <span style={{ font: "400 11px var(--mono)", color: "rgba(245,241,233,.4)" }}>
-                  waiting…
-                </span>
-              ) : (
-                log.map((line, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      font: "400 10.5px/1.45 var(--mono)",
-                      color: line.includes("✗")
-                        ? "#e8b7a6"
-                        : line.includes("✓")
-                          ? "rgba(201,162,90,.9)"
-                          : "rgba(245,241,233,.6)",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {line}
-                  </span>
-                ))
-              )}
-            </div>
+          {/* Diagnostics, folded away until asked for. */}
+          <div className="push stack" style={{ gap: 8 }}>
+            <button className="log-toggle" onClick={() => setShowLog((v) => !v)}>
+              <Icon
+                name="chevronDown"
+                size={13}
+                style={{ transform: showLog ? "none" : "rotate(-90deg)" }}
+              />
+              Technical details
+            </button>
+            {showLog ? (
+              <div className="log-box">
+                {log.length === 0 ? (
+                  <span className="log-line">waiting…</span>
+                ) : (
+                  log.map((line, i) => (
+                    <span
+                      key={i}
+                      className={`log-line ${line.includes("✗") ? "bad" : line.includes("✓") ? "ok" : ""}`}
+                    >
+                      {line}
+                    </span>
+                  ))
+                )}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

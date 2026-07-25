@@ -2,8 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Icon from "./Icon";
 
-export default function RetryEvaluate({ essayId }: { essayId: string }) {
+export default function RetryEvaluate({
+  essayId,
+  title,
+}: {
+  essayId: string;
+  title?: string;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,12 +30,20 @@ export default function RetryEvaluate({ essayId }: { essayId: string }) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}>
-      <p style={{ margin: 0, font: "400 13px/1.6 var(--sans)", color: "var(--muted)" }}>
-        The last evaluation didn&rsquo;t finish. It wasn&rsquo;t counted against your monthly limit.
+    <div className="card empty">
+      <span
+        className="stat-icon"
+        style={{ background: "var(--brand-soft)", color: "var(--brand)", width: 52, height: 52 }}
+      >
+        <Icon name="swords" size={24} />
+      </span>
+      {title ? <h1 className="h1">{title}</h1> : null}
+      <p className="small" style={{ maxWidth: 380 }}>
+        The last evaluation didn&rsquo;t finish. It wasn&rsquo;t counted against your monthly
+        limit — run it again whenever you&rsquo;re ready.
       </p>
-      {error ? <p className="error-text" style={{ margin: 0 }}>{error}</p> : null}
-      <button className="btn btn-accent" onClick={retry} disabled={busy}>
+      {error ? <p className="error-text">{error}</p> : null}
+      <button className="btn btn-primary btn-lg" onClick={retry} disabled={busy}>
         {busy ? "Starting…" : "Run evaluation again"}
       </button>
     </div>

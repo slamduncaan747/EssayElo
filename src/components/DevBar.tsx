@@ -30,9 +30,9 @@ function Group({
     <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
       <span
         style={{
-          font: "500 8.5px var(--mono)",
-          letterSpacing: ".1em",
-          color: "rgba(245,241,233,.4)",
+          font: "800 8.5px var(--sans)",
+          letterSpacing: ".12em",
+          color: "var(--on-dark-3)",
         }}
       >
         {label}
@@ -63,15 +63,15 @@ function Pill({
       disabled={disabled}
       title={title}
       style={{
-        font: `${active ? 700 : 500} 11px var(--sans)`,
+        font: `${active ? 900 : 700} 11px var(--sans)`,
         padding: "5px 11px",
         borderRadius: 999,
         background: active
           ? accent
             ? "var(--gold)"
-            : "rgba(245,241,233,.18)"
+            : "rgba(246,241,231,.18)"
           : "transparent",
-        color: active ? (accent ? "var(--ink)" : "var(--cream)") : "rgba(245,241,233,.5)",
+        color: active ? (accent ? "var(--ink)" : "var(--on-dark)") : "var(--on-dark-3)",
       }}
     >
       {children}
@@ -119,8 +119,8 @@ export default function DevBar({
         display: "flex",
         alignItems: "center",
         gap: 14,
-        background: "rgba(36,31,23,.94)",
-        border: "1px solid rgba(245,241,233,.16)",
+        background: "rgba(36,28,20,.94)",
+        border: "1px solid rgba(246,241,231,.16)",
         borderRadius: 999,
         padding: "6px 10px",
         boxShadow: "0 8px 24px rgba(40,30,15,.3)",
@@ -142,7 +142,7 @@ export default function DevBar({
         ))}
       </Group>
 
-      <span style={{ width: 1, alignSelf: "stretch", background: "rgba(245,241,233,.14)" }} />
+      <span style={{ width: 1, alignSelf: "stretch", background: "rgba(246,241,231,.14)" }} />
 
       <Group label="ENGINE">
         {ENGINES.map((e) => (

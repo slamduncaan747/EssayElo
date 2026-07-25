@@ -1,29 +1,38 @@
 import Link from "next/link";
+import Icon, { type IconName } from "@/components/Icon";
+import { TierBadge } from "@/components/Score";
+import { TIERS, tierCeiling } from "@/lib/tier";
 
 export const metadata = { title: "How scoring works — Margin" };
 
-const SECTIONS = [
+const SECTIONS: { icon: IconName; h: string; p: string }[] = [
   {
+    icon: "swords",
     h: "The score is a percentile, not a grade.",
     p: "Your number answers one question: what fraction of applicant essays does this outrank? It comes from head-to-head comparisons against a calibrated pool of real and reference essays — the same way chess ratings work. Nobody hand-waves a 7/10.",
   },
   {
+    icon: "target",
     h: "It is deliberately stringent.",
     p: "A genuinely well-written, sincere, polished essay scores around 45. That is not an insult — it is the honest middle of a strong applicant pool. Polish gets you to 45. Only revealing a person few others could reveal climbs higher. 80+ is near-nonexistent, and we keep it that way on purpose.",
   },
   {
+    icon: "compass",
     h: "What actually moves the number.",
     p: "Each comparison asks one question: which essay leaves the reader knowing a more specific, less producible person? Not which is better written, more moving, or about a weightier topic. A mundane topic revealing a rare person beats a profound topic revealing a familiar one.",
   },
   {
+    icon: "pencil",
     h: "Prose is measured separately.",
     p: "Writing quality never moves your score — it is measured on its own channel and reported as a flag: 'prose is carrying it' (reads better than it is) or 'substance ahead of prose' (rare material, undersold telling). That tells you where to spend your remaining effort.",
   },
   {
+    icon: "crown",
     h: "Free shows a band. Plus shows the number.",
     p: "After 10 matchups we can place your band honestly; showing a decimal would be false precision. Plus runs 25 matchups — tight enough to justify the exact score — and surfaces all the evidence: every note, every fix, every reason your essay won or lost a matchup.",
   },
   {
+    icon: "chart",
     h: "Every score is uncertain, and we say so.",
     p: "When independent readings disagree about your essay, your band gets wider and we tell you. A precise-looking number that doesn't correspond to anything real is worse than no number at all.",
   },
@@ -31,61 +40,72 @@ const SECTIONS = [
 
 export default function HowScoringWorks() {
   return (
-    <div style={{ background: "var(--cream)", minHeight: "100vh" }}>
+    <div className="land">
       <nav className="land-nav">
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <div className="logo-mark" style={{ width: 26, height: 26, fontSize: 15 }}>M</div>
-          <span style={{ font: "italic 600 19px var(--serif)" }}>Margin</span>
+        <Link href="/" className="logo" style={{ margin: 0, padding: 0 }}>
+          <div className="logo-mark">M</div>
+          <span className="logo-name">Margin</span>
         </Link>
         <div className="links">
           <Link href="/upgrade">Pricing</Link>
-          <Link href="/login" style={{ color: "var(--ink)" }}>Log in</Link>
-          <Link href="/signup" className="btn btn-dark" style={{ padding: "9px 18px" }}>
+          <Link href="/login" style={{ color: "var(--text)" }}>
+            Log in
+          </Link>
+          <Link href="/signup" className="btn btn-primary btn-sm">
             Score your essay
           </Link>
         </div>
       </nav>
 
-      <main style={{ maxWidth: 660, margin: "0 auto", padding: "40px 24px 80px" }}>
-        <span style={{ font: "500 11px var(--mono)", letterSpacing: ".14em", color: "var(--accent)" }}>
-          HOW SCORING WORKS
+      <main className="land-section" style={{ maxWidth: 780, paddingBottom: 80 }}>
+        <span className="eyebrow">
+          <Icon name="compass" size={13} />
+          How scoring works
         </span>
-        <h1 style={{ margin: "10px 0 8px", font: "500 40px/1.15 var(--serif)" }}>
-          A number that <span style={{ fontStyle: "italic" }}>means</span> something.
+        <h1 className="display" style={{ margin: "16px 0 12px", fontSize: "clamp(34px,4.6vw,50px)" }}>
+          A number that <span style={{ color: "var(--brand)" }}>means</span> something.
         </h1>
+        <p className="lede">
+          Every point is earned in a matchup against another essay. Here is exactly how.
+        </p>
 
-        <div
-          className="card"
-          style={{ margin: "26px 0", padding: "18px 22px", background: "var(--paper)", display: "flex", flexDirection: "column", gap: 6 }}
-        >
-          {[
-            ["80+", "Standout. Moves the application. 0.4% of essays."],
-            ["60–80", "Begins to help — the reader remembers a detail."],
-            ["45", "A genuinely well-written essay. Most essays sit here."],
-            ["20–45", "Competent, clean, forgettable."],
-            ["<20", "Actively hurts the application. Rare."],
-          ].map(([k, v]) => (
-            <div key={k} style={{ display: "flex", gap: 14, font: "400 13.5px/1.6 var(--sans)", color: "var(--body)" }}>
-              <b style={{ font: "600 13px var(--mono)", color: "var(--accent)", minWidth: 52 }}>{k}</b>
-              <span>{v}</span>
+        <div className="ladder" style={{ margin: "30px 0 40px" }}>
+          {TIERS.map((t) => (
+            <div key={t.key} className="ladder-row">
+              <b style={{ color: t.ink }}>
+                {t.key === "standout" ? "80+" : `${t.min}–${tierCeiling(t) - 1}`}
+              </b>
+              <TierBadge tier={t} />
+              <span>{t.blurb}</span>
             </div>
           ))}
         </div>
 
-        {SECTIONS.map((s) => (
-          <section key={s.h} style={{ margin: "26px 0" }}>
-            <h2 style={{ margin: "0 0 6px", font: "600 19px var(--serif)" }}>{s.h}</h2>
-            <p style={{ margin: 0, font: "400 14.5px/1.7 var(--sans)", color: "#5a5346" }}>{s.p}</p>
-          </section>
-        ))}
+        <div className="stack" style={{ gap: 14 }}>
+          {SECTIONS.map((s) => (
+            <section key={s.h} className="card" style={{ padding: "22px 24px", display: "flex", gap: 16 }}>
+              <span
+                className="stat-icon"
+                style={{ background: "var(--brand-soft)", color: "var(--brand)" }}
+              >
+                <Icon name={s.icon} size={19} />
+              </span>
+              <div className="stack" style={{ gap: 7 }}>
+                <h2 className="h2">{s.h}</h2>
+                <p className="copy" style={{ color: "var(--muted)" }}>
+                  {s.p}
+                </p>
+              </div>
+            </section>
+          ))}
+        </div>
 
-        <div style={{ marginTop: 40, display: "flex", gap: 12, alignItems: "center" }}>
-          <Link href="/signup" className="btn btn-accent" style={{ padding: "13px 26px", fontSize: 14 }}>
+        <div className="row" style={{ marginTop: 34, gap: 14, flexWrap: "wrap" }}>
+          <Link href="/signup" className="btn btn-primary btn-lg">
             Score your essay free
+            <Icon name="arrowRight" size={19} />
           </Link>
-          <span style={{ font: "400 12px var(--sans)", color: "var(--faint)" }}>
-            3 free evaluations · no card
-          </span>
+          <span className="small">3 free evaluations · no card</span>
         </div>
       </main>
     </div>

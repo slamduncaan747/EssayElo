@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Icon from "@/components/Icon";
 
 interface HistoryEntry {
   version: number;
@@ -67,9 +68,12 @@ export default function EditorView({
     timer.current = setTimeout(save, 1500);
   }
 
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    []
+  );
 
   async function quickCheck() {
     setError(null);
@@ -87,22 +91,22 @@ export default function EditorView({
   }
 
   const savedLabel = saving
-    ? "saving…"
+    ? "Saving…"
     : savedAt
-      ? `autosaved ${Math.max(1, Math.round((Date.now() - savedAt.getTime()) / 1000))}s ago`
+      ? `Autosaved ${Math.max(1, Math.round((Date.now() - savedAt.getTime()) / 1000))}s ago`
       : dirty
-        ? "unsaved edits"
-        : "up to date";
+        ? "Unsaved edits"
+        : "Up to date";
 
   return (
     <div className="workspace">
-      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div className="doc">
         <div className="doc-header">
           <div className="doc-title">
             <b>{title}</b>
-            <span className="chip">
+            <span className={`chip ${dirty ? "chip-brand" : ""}`}>
               Draft {version}
-              {dirty ? " · unsaved edits" : ""}
+              {dirty ? " · unsaved" : ""}
             </span>
           </div>
           <div className="tabs">
@@ -113,27 +117,28 @@ export default function EditorView({
         </div>
 
         <div className="essay-body">
-          <textarea
-            className="editor-area"
-            value={content}
-            onChange={(e) => onChange(e.target.value)}
-            spellCheck
-          />
+          <div className="essay-sheet">
+            <textarea
+              className="editor-area"
+              value={content}
+              onChange={(e) => onChange(e.target.value)}
+              spellCheck
+            />
+          </div>
         </div>
 
         <div className="doc-footer">
-          <span>
+          <span className="num">
             {evaluatedWordCount > 0 && evaluatedWordCount !== words
               ? `${evaluatedWordCount} → ${words} words`
               : `${words} words`}
           </span>
-          <span style={{ color: "#c9c2b2" }}>·</span>
+          <span style={{ color: "var(--border-strong)" }}>·</span>
           <span>{savedLabel}</span>
           {error ? <span className="error-text">{error}</span> : null}
           <span style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
             <button
-              className="btn btn-outline"
-              style={{ padding: "7px 14px", fontSize: 11.5, fontWeight: 500 }}
+              className="btn btn-ghost"
               onClick={() => {
                 setContent(initialContent);
                 setDirty(true);
@@ -144,27 +149,30 @@ export default function EditorView({
               Discard edits
             </button>
             <button
-              className="btn btn-accent"
-              style={{ padding: "7px 16px", fontSize: 11.5 }}
+              className="btn btn-primary btn-sm"
               onClick={quickCheck}
               disabled={checking || !canQuickCheck}
               title={canQuickCheck ? undefined : "Run a full evaluation first"}
             >
-              {checking ? "Starting…" : `Quick check draft ${version}`}
+              <Icon name="bolt" size={15} />
+              {checking ? "Starting…" : "Quick check"}
             </button>
           </span>
         </div>
       </div>
 
       <div className="panel-light">
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span className="mono-label">LAST EVALUATION</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ font: "600 34px var(--serif)", color: "var(--accent)" }}>
+        <div className="stack" style={{ gap: 10 }}>
+          <span className="label">Last evaluation</span>
+          <div className="row" style={{ gap: 14 }}>
+            <span
+              className="num"
+              style={{ font: "900 34px var(--sans)", color: "var(--brand)", letterSpacing: "-.03em" }}
+            >
               {lastBand ?? "—"}
             </span>
-            <span style={{ font: "400 11px/1.45 var(--sans)", color: "var(--muted)" }}>
-              quick check to see
+            <span className="tiny">
+              Quick check to see
               <br />
               where this draft lands
             </span>
@@ -172,16 +180,19 @@ export default function EditorView({
         </div>
 
         {hint ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <span className="mono-label">WHILE YOU EDIT</span>
-            <div className="hint-card">{hint}</div>
+          <div className="stack" style={{ gap: 9 }}>
+            <span className="label">While you edit</span>
+            <div className="hint-card">
+              <Icon name="spark" size={17} />
+              <span>{hint}</span>
+            </div>
           </div>
         ) : null}
 
         {history.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <span className="mono-label">DRAFT HISTORY</span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div className="stack" style={{ gap: 9 }}>
+            <span className="label">Draft history</span>
+            <div className="stack" style={{ gap: 7 }}>
               {history.map((h, i) => (
                 <div key={h.version} className={`history-row ${i === 0 ? "top" : ""}`}>
                   <span>Draft {h.version}</span>
@@ -192,8 +203,11 @@ export default function EditorView({
           </div>
         ) : null}
 
-        <div style={{ marginTop: "auto", font: "400 11px/1.5 var(--sans)", color: "var(--faint)" }}>
-          Quick checks are free &amp; unlimited
+        <div className="push">
+          <span className="tiny" style={{ display: "flex", gap: 7, alignItems: "center" }}>
+            <Icon name="bolt" size={14} />
+            Quick checks are free &amp; unlimited
+          </span>
         </div>
       </div>
     </div>

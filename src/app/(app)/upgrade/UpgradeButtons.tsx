@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Icon from "@/components/Icon";
 
 export function CheckoutButton() {
   const [busy, setBusy] = useState(false);
@@ -22,10 +23,15 @@ export function CheckoutButton() {
 
   return (
     <>
-      <button className="btn btn-gold" style={{ width: "100%", padding: "13px 0", fontSize: 14 }} onClick={go} disabled={busy}>
+      <button className="btn btn-gold btn-block btn-lg" onClick={go} disabled={busy}>
         {busy ? "Redirecting…" : "Unlock the full review"}
+        {busy ? null : <Icon name="arrowRight" size={18} />}
       </button>
-      {error ? <p className="error-text" style={{ margin: "6px 0 0", textAlign: "center" }}>{error}</p> : null}
+      {error ? (
+        <p className="error-text center" style={{ marginTop: 6 }}>
+          {error}
+        </p>
+      ) : null}
     </>
   );
 }
@@ -46,7 +52,7 @@ export function PortalButton() {
   }
 
   return (
-    <button className="btn btn-outline-light" style={{ width: "100%", padding: "12px 0" }} onClick={go} disabled={busy}>
+    <button className="btn btn-onDark btn-block" onClick={go} disabled={busy}>
       {busy ? "Opening…" : "Manage subscription"}
     </button>
   );

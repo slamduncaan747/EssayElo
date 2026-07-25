@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Icon from "@/components/Icon";
 
 export default function RunFullButton({ essayId }: { essayId: string }) {
   const router = useRouter();
@@ -23,13 +24,14 @@ export default function RunFullButton({ essayId }: { essayId: string }) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {error ? <p className="error-text" style={{ margin: 0, textAlign: "center" }}>{error}</p> : null}
-      <button className="btn btn-dark" style={{ width: "100%", padding: "12px 0" }} onClick={run} disabled={busy}>
+    <div className="stack" style={{ gap: 9 }}>
+      {error ? <p className="error-text center">{error}</p> : null}
+      <button className="btn btn-primary btn-block btn-lg" onClick={run} disabled={busy}>
+        <Icon name="swords" size={18} />
         {busy ? "Starting…" : "Run full evaluation"}
       </button>
-      <span style={{ textAlign: "center", font: "400 11px var(--sans)", color: "var(--faint)" }}>
-        Quick checks are free &amp; unlimited · full evaluation re-scores from scratch
+      <span className="tiny center" style={{ display: "block" }}>
+        Quick checks are free &amp; unlimited · a full evaluation re-scores from scratch
       </span>
     </div>
   );
