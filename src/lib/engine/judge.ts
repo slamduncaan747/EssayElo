@@ -43,6 +43,24 @@ interface CompareOutput {
   direction_flag: { essay: "A" | "B"; note: string } | null;
 }
 
+const PLACEMENT_TIERS = [2, 4, 6] as const;
+
+/**
+ * Anthropic's native structured outputs enforce the schema's tier enum, but
+ * the openai-compat path (Groq/llama etc.) only asks for it in the prompt —
+ * a smaller model can return a missing or off-scale tier. Snap to the nearest
+ * valid tier rather than propagating NaN: an unvalidated tier silently
+ * becomes a null Elo (JSON.stringify(NaN) === "null"), which then blows up
+ * the NOT NULL constraint on matches.elo_before several steps later.
+ */
+function coerceTier(tier: unknown): number {
+  const n = Number(tier);
+  if (!Number.isFinite(n)) return 4;
+  return PLACEMENT_TIERS.reduce((best, t) =>
+    Math.abs(t - n) < Math.abs(best - n) ? t : best
+  );
+}
+
 export async function judgePlacement(essay: string): Promise<number> {
   if (isMock()) return mockPlacement(essay).tier;
   const out = await structuredCall<{ tier: number }>({
@@ -52,7 +70,7 @@ export async function judgePlacement(essay: string): Promise<number> {
     schema: PLACEMENT_SCHEMA as unknown as Record<string, unknown>,
     maxTokens: 300,
   });
-  return out.tier;
+  return coerceTier(out.tier);
 }
 
 /**
@@ -237,11 +255,18 @@ export async function judgeProse(
   essay: string
 ): Promise<{ prose_score: number; note: string }> {
   if (isMock()) return mockProse(essay);
-  return structuredCall<{ prose_score: number; note: string }>({
+  const out = await structuredCall<{ prose_score: number; note: string }>({
     model: cheapModel(),
     system: PROSE_SYSTEM,
     user: proseUser(essay),
     schema: PROSE_SCHEMA as unknown as Record<string, unknown>,
     maxTokens: 300,
   });
+  // Same non-strict-schema risk as placement: an off-scale or missing score
+  // would otherwise become NaN, which JSON.stringify turns into a silent null.
+  const score = Number(out.prose_score);
+  return {
+    prose_score: Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 50,
+    note: out.note ?? "",
+  };
 }
