@@ -60,7 +60,12 @@ export function configFor(preset: EnginePreset): EngineConfig {
         preset,
         mock: false,
         judgeModel: m.fast,
-        synthModel: m.fast,
+        // Synthesis is one call per evaluation (not per-match), so routing it
+        // through the quality model costs little — and it needs the headroom:
+        // it carries the full essay plus clustered evidence, which can exceed
+        // small models' per-minute token caps (e.g. Groq's 6k TPM on
+        // llama-3.1-8b-instant).
+        synthModel: m.quality,
         cheapModel: m.fast,
       };
     case "quality":

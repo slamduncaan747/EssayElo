@@ -96,10 +96,15 @@ async function anthropicCall<T>(opts: StructuredCallOpts): Promise<T> {
 }
 
 /**
- * OpenAI-compatible chat-completions call using JSON mode. The schema is
- * embedded in the system message (json-mode providers require the word "json"
- * in the prompt and don't all support response_format.json_schema); the shared
- * one-retry parse in structuredCall covers the occasional stray wrapper.
+ * OpenAI-compatible chat-completions call. Prefers strict JSON Schema
+ * enforcement (response_format: json_schema, strict: true) — OpenAI and
+ * Gemini's OpenAI-compat endpoint both constrain generation to the schema
+ * itself rather than trusting prompt instructions, which is what makes
+ * fields like an enum tier or a bounded score reliable without us validating
+ * every response. Providers that don't support it (older Groq models) self-
+ * heal to loose JSON mode with the schema described in the prompt, same as
+ * the other capability probes below — narrow the request and retry rather
+ * than requiring perfect per-provider env config.
  */
 async function openAiCompatCall<T>(opts: StructuredCallOpts): Promise<T> {
   const base = process.env.LLM_BASE_URL;
@@ -107,8 +112,6 @@ async function openAiCompatCall<T>(opts: StructuredCallOpts): Promise<T> {
   if (!base || !key) {
     throw new Error("LLM_BASE_URL and LLM_API_KEY must be set for openai-compat");
   }
-  const shape = opts.schemaHint ?? JSON.stringify(opts.schema);
-  const system = `${opts.system}\n\nRespond with ONLY a JSON object, no prose or markdown, in exactly this shape:\n${shape}`;
 
   // Reasoning models (e.g. Gemini flash) spend output tokens thinking before
   // the JSON, so floor the budget and pass through the effort control. Not all
@@ -118,18 +121,33 @@ async function openAiCompatCall<T>(opts: StructuredCallOpts): Promise<T> {
   let sendReasoning = !!reasoningEnv;
   const maxTokens = Math.max(opts.maxTokens ?? 2048, reasoningEnv ? 1200 : 512);
 
-  const buildBody = () =>
-    JSON.stringify({
+  // Newer OpenAI models (gpt-5.x) reject max_tokens in favor of
+  // max_completion_tokens, and reasoning models reject any temperature other
+  // than their default. Both self-heal below rather than branching on model
+  // name, since the same code path serves Groq, Gemini, and OpenAI.
+  let tokenParam: "max_tokens" | "max_completion_tokens" = "max_tokens";
+  let sendTemperature = true;
+  let useStrictSchema = true;
+
+  const buildBody = () => {
+    const shape = opts.schemaHint ?? JSON.stringify(opts.schema);
+    const system = useStrictSchema
+      ? opts.system
+      : `${opts.system}\n\nRespond with ONLY a JSON object, no prose or markdown, in exactly this shape:\n${shape}`;
+    return JSON.stringify({
       model: opts.model,
-      max_tokens: maxTokens,
-      temperature: 0,
-      response_format: { type: "json_object" },
+      [tokenParam]: maxTokens,
+      ...(sendTemperature ? { temperature: 0 } : {}),
+      response_format: useStrictSchema
+        ? { type: "json_schema", json_schema: { name: "response", strict: true, schema: opts.schema } }
+        : { type: "json_object" },
       ...(sendReasoning && reasoningEnv ? { reasoning_effort: reasoningEnv } : {}),
       messages: [
         { role: "system", content: system },
         { role: "user", content: opts.user },
       ],
     });
+  };
 
   // Retry rate limits (429) and transient server errors, waiting out the
   // provider's stated retry window (header or message). Free tiers cap tokens-
@@ -147,9 +165,23 @@ async function openAiCompatCall<T>(opts: StructuredCallOpts): Promise<T> {
     });
     if (res.ok) break;
     const detail = await res.text().catch(() => "");
-    // Self-heal: model doesn't accept reasoning_effort — drop it and retry.
+    // Self-heal, each narrowing the request toward the lowest common
+    // denominator: drop reasoning_effort, fall back off strict schema mode,
+    // switch the token-limit param name, drop a fixed temperature.
     if (res.status === 400 && sendReasoning && /reasoning_effort/i.test(detail)) {
       sendReasoning = false;
+      continue;
+    }
+    if (res.status === 400 && useStrictSchema && /(json_schema|response_format)/i.test(detail)) {
+      useStrictSchema = false;
+      continue;
+    }
+    if (res.status === 400 && tokenParam === "max_tokens" && /max_tokens/i.test(detail)) {
+      tokenParam = "max_completion_tokens";
+      continue;
+    }
+    if (res.status === 400 && sendTemperature && /temperature/i.test(detail)) {
+      sendTemperature = false;
       continue;
     }
     // A per-day quota resets in hours, not seconds — retrying just burns the
