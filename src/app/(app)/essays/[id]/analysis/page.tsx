@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import Icon from "@/components/Icon";
+import Icon, { type IconName } from "@/components/Icon";
 import { NextRank, Rank, ScoreRing } from "@/components/Score";
 import { getEssayBundle, getProfile, listEssays } from "@/lib/data";
 import { loadAnalysis } from "@/lib/analysis";
 import { exactScore } from "@/lib/engine/scale";
 import { tierForScore } from "@/lib/tier";
+import { evidenceLabel, type Theme } from "@/lib/engine/cluster";
+import { impactValue } from "@/lib/engine/assemble";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Analysis — Margin" };
@@ -44,6 +46,37 @@ function Section({
   );
 }
 
+/**
+ * One clustered theme, carrying how many independent readings made the point —
+ * the difference between an anecdote and a finding.
+ */
+function Finding({
+  theme,
+  total,
+  icon,
+  color,
+}: {
+  theme: Theme;
+  total: number;
+  icon: IconName;
+  color: string;
+}) {
+  const evidence = evidenceLabel(theme.count, total);
+  return (
+    <div className="card" style={{ padding: "var(--s4) var(--s5)", display: "flex", gap: "var(--s3)" }}>
+      <Icon name={icon} size={18} strokeWidth={2.5} style={{ color, marginTop: 2, flex: "none" }} />
+      <div className="stack g2">
+        <span className="copy">{theme.text}</span>
+        {evidence ? (
+          <span className="chip" style={{ fontSize: 11 }}>
+            {evidence}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export default async function AnalysisPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [profile, items, bundle] = await Promise.all([
@@ -65,6 +98,7 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
   const marks = ev.result?.marks ?? [];
   const nextSteps = marks
     .filter((m) => (m.kind === "cliche" || m.kind === "weak") && m.fix)
+    .sort((x, y) => impactValue(y.impact) - impactValue(x.impact))
     .slice(0, 5);
   const prose = PROSE_COPY[ev.prose_tag ?? "aligned"];
   const counted = a.wins + a.losses;
@@ -255,26 +289,32 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
           </Section>
 
           {a.clusters.wins.length > 0 ? (
-            <Section label="What's working" title="Recurring reasons you won">
+            <Section label="What's working" title="What readers kept crediting">
               <div className="stack g3">
                 {a.clusters.wins.map((w, i) => (
-                  <div key={i} className="feat">
-                    <Icon name="check" size={18} strokeWidth={2.6} style={{ color: "var(--green)" }} />
-                    {w}
-                  </div>
+                  <Finding
+                    key={i}
+                    theme={w}
+                    total={a.clusters.totalWins}
+                    icon="check"
+                    color="var(--green)"
+                  />
                 ))}
               </div>
             </Section>
           ) : null}
 
           {a.clusters.losses.length > 0 ? (
-            <Section label="What's holding it back" title="Recurring reasons you lost">
+            <Section label="What's holding it back" title="What readers kept marking down">
               <div className="stack g3">
                 {a.clusters.losses.map((l, i) => (
-                  <div key={i} className="feat">
-                    <Icon name="flag" size={18} strokeWidth={2.4} style={{ color: "var(--red)" }} />
-                    {l}
-                  </div>
+                  <Finding
+                    key={i}
+                    theme={l}
+                    total={a.clusters.totalLosses}
+                    icon="flag"
+                    color="var(--red)"
+                  />
                 ))}
               </div>
             </Section>
@@ -285,8 +325,10 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
               <div className="card card-pad stack g3">
                 <p className="copy">
                   Readers estimated that{" "}
-                  <b style={{ color: "var(--brand)" }}>{a.clusters.producibility[0]}</b> other
-                  applicants could reveal what your most producible beat reveals.
+                  <b style={{ color: "var(--brand)" }}>
+                    {a.clusters.producibility[0].text}
+                  </b>{" "}
+                  other applicants could reveal what your most producible beat reveals.
                 </p>
                 {a.clusters.metPersonMoments.length > 0 ? (
                   <p className="small">

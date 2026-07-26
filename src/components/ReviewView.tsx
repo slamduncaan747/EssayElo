@@ -210,6 +210,20 @@ export default function ReviewView({
             </div>
 
             <div className="panel-body on-dark-scroll" style={{ gap: "var(--s2)" }}>
+              {view.verdict ? (
+                <div className="verdict">
+                  <span className="label">The read</span>
+                  <p>{view.verdict}</p>
+                </div>
+              ) : null}
+
+              {view.biggest_detractor ? (
+                <div className="note-fix" style={{ marginBottom: "var(--s2)" }}>
+                  <b>Costing you the most</b>
+                  {view.biggest_detractor}
+                </div>
+              ) : null}
+
               <div className="spread" style={{ marginBottom: 2 }}>
                 <span className="label">
                   Notes · {idx != null ? idx + 1 : 1} of {marks.length}

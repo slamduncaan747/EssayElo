@@ -353,13 +353,14 @@ async function stepSynthesis(db: SupabaseClient, ev: Evaluation): Promise<StepRe
   const essay = await draftContent(db, ev.draft_id);
   const { data: matchRows } = await db
     .from("matches")
-    .select("winner, opp_elo, weight, harvest")
+    .select("winner, opp_elo, weight, margin, harvest")
     .eq("evaluation_id", ev.id);
 
   const matches = (matchRows ?? []) as {
     winner: MatchWinner;
     opp_elo: number;
     weight: number;
+    margin: string | null;
     harvest: Harvest | null;
   }[];
 

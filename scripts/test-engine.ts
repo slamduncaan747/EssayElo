@@ -12,6 +12,8 @@
  *
  * Run: npm run test:engine
  */
+import { clusterThemes, evidenceLabel, similarity, signature } from "../src/lib/engine/cluster";
+import { impactValue } from "../src/lib/engine/assemble";
 import { eloUpdate } from "../src/lib/engine/elo";
 import { pickOpponent, type Opponent } from "../src/lib/engine/matchmaker";
 import { scoreToElo, eloToScore, tierToElo } from "../src/lib/engine/scale";
@@ -145,6 +147,75 @@ function main() {
     repeats25.reduce((a, b) => a + (b - mean25) ** 2, 0) / repeats25.length
   );
   check("budget 25 is tighter than 10", sd25 <= sd, `sd10=${sd.toFixed(2)} sd25=${sd25.toFixed(2)}`);
+
+  // 5. Theme clustering: paraphrases of one point must collapse into one
+  //    counted finding, and distinct points must stay distinct. This is what
+  //    turns repeated readings into a diagnosis instead of a list.
+  const reasons = [
+    // Five ways of saying the ending is too tidy.
+    { text: "The closing resolves too neatly; the growth is asserted rather than shown." },
+    { text: "Growth is asserted at the close, not shown — it resolves too neatly." },
+    { text: "The ending asserts growth instead of showing it, resolving neatly." },
+    { text: "Resolves neatly at the end; growth asserted, never shown." },
+    { text: "The close is too tidy — asserted growth, nothing shown." },
+    // Three ways of saying the specificity is the strength.
+    { text: "Specific sensory detail makes the scene concrete and rare." },
+    { text: "Concrete sensory specifics make the scene rare." },
+    { text: "The rare, concrete sensory detail carries the scene." },
+    // One standalone observation.
+    { text: "Dialogue is used sparingly but lands well." },
+  ];
+  const themes = clusterThemes(reasons);
+  check(
+    "cluster: paraphrases collapse into distinct themes",
+    themes.length === 3,
+    `${themes.length} themes from ${reasons.length} reasons`
+  );
+  check(
+    "cluster: the most-repeated theme ranks first",
+    themes[0]?.count === 5,
+    `top count=${themes[0]?.count}`
+  );
+  check(
+    "cluster: a lone observation stays its own theme of one",
+    themes.some((t) => t.count === 1),
+    themes.map((t) => t.count).join("/")
+  );
+
+  // Decisive readings should outrank a merely more numerous narrow group.
+  const weighted = clusterThemes([
+    { text: "Ends on an unearned lesson about perseverance.", weight: 1.6 },
+    { text: "Closes with an unearned perseverance lesson.", weight: 1.6 },
+    { text: "The unearned perseverance lesson ends it.", weight: 1.6 },
+    { text: "Uses dialogue sparingly.", weight: 0.6 },
+    { text: "Dialogue used sparingly here.", weight: 0.6 },
+    { text: "Sparing use of dialogue throughout.", weight: 0.6 },
+    { text: "Dialogue is sparing.", weight: 0.6 },
+  ]);
+  check(
+    "cluster: decisive readings outweigh a larger narrow group",
+    weighted[0]?.text.includes("perseverance"),
+    `top="${weighted[0]?.text.slice(0, 40)}…"`
+  );
+
+  check(
+    "cluster: unrelated text does not merge",
+    similarity(signature("the freezer broke in July"), signature("dialogue is sparing")) === 0,
+    "jaccard=0"
+  );
+
+  check(
+    "evidence label: a single mention is not a pattern",
+    evidenceLabel(1, 10) === null && evidenceLabel(6, 13) === "6 of 13 readings",
+    "1→null, 6/13→label"
+  );
+
+  // 6. Impact parsing drives the "ordered by estimated impact" list.
+  check(
+    "impact: ranges parse to a sortable midpoint",
+    impactValue("+2\u20134") === 3 && impactValue("+3-6") === 4.5 && impactValue(null) === 0,
+    "+2–4→3, +3-6→4.5, null→0"
+  );
 
   if (failures > 0) {
     console.error(`\n${failures} check(s) failed`);

@@ -111,6 +111,9 @@ export interface EssayMark {
 }
 
 export interface SynthesisResult {
+  /** The lead paragraph the writer reads first. Optional: rows written before
+   *  the verdict existed simply don't carry one. */
+  verdict?: string | null;
   /** Per-paragraph quality, 0–100. */
   arc: number[];
   marks: EssayMark[];
@@ -146,6 +149,7 @@ export interface EvaluationView {
   structure_score: number | null; // Plus only
   prose_tag: ProseTag | null; // Plus only
   direction_flag: string | null;
+  verdict: string | null; // Plus only
   arc: number[] | null;
   counts: SynthesisResult["counts"] | null;
   marks: EssayMark[] | null; // note/fix bodies stripped on free

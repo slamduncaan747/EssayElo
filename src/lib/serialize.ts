@@ -26,6 +26,7 @@ export function evaluationView(ev: Evaluation, plan: Plan): EvaluationView {
     structure_score: done && isPlus ? ev.structure_score : null,
     prose_tag: done && isPlus ? ev.prose_tag : null,
     direction_flag: done ? ev.direction_flag : null,
+    verdict: done && isPlus ? (result?.verdict ?? null) : null,
     arc: result?.arc ?? null,
     counts: result?.counts ?? null,
     marks: result

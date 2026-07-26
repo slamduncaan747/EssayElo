@@ -91,7 +91,7 @@ export async function loadAnalysis(ev: Evaluation): Promise<AnalysisData | null>
     records,
     trajectory: records.map((r) => eloToScore(r.eloAfter)),
     clusters: clusterHarvest(
-      rows.map((r) => ({ winner: r.winner, harvest: r.harvest }))
+      rows.map((r) => ({ winner: r.winner, harvest: r.harvest, margin: r.margin }))
     ),
     intransitivity: ev.intransitivity ?? 0,
   };

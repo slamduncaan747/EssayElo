@@ -243,45 +243,73 @@ export const PROSE_SCHEMA = {
 
 export const SYNTHESIS_SYSTEM = `You convert accumulated head-to-head evidence about a college essay into located, evidence-grounded feedback. You diagnose precisely; you prescribe only as deletions or as questions that point the writer at their own rarer material ("what did you actually think in that moment that no one else would have?"). You NEVER write replacement content for them.
 
+VOICE. Write like an experienced reader talking straight to the writer, second person, present tense. Specific and unhedged. No praise sandwiches, no "consider perhaps", no coaching-speak ("unpack", "lean into", "elevate", "journey", "showcase", "resonate"). Name what is on the page rather than describing it in the abstract: "the four hours are summarised in a clause" beats "the pacing could be tightened". A sentence a reader could apply to any essay is a wasted sentence — if a note would survive being pasted onto a different essay, rewrite it or drop it.
+
+THE VERDICT is the first thing the writer reads. Three or four sentences: what this essay is actually doing, where it stops short, and why that is what holds it at this score rather than higher. Refer to the essay's own material by name — its subject, its scenes, its turns. Do not restate the score, do not open with "This essay". Never open with praise you then withdraw.
+
 Rules:
 - Every mark's "excerpt" must be a VERBATIM substring of the essay (a phrase or sentence, 4–25 words). Marks that don't match the text exactly are useless.
 - "standout" = a beat where a specific, hard-to-produce person is visible. "cliche" = a phrase or move thousands of applicants produce. "weak" = a beat that stays abstract or generic where something specific was available. "solid" = competent, carries its weight.
-- Keep notes to one beat each. No throat-clearing.
+- Notes are one beat each and must say what is wrong or right about THAT excerpt, not restate it.
+- "fix" is a deletion or a question aimed at the writer's own memory. Never supply prose for them.
 - Impact estimates are honest ranges on a 0–100 scale where cutting a cliché is worth +2–4 and a structural fix +3–6. Never promise more.
-- The arc array gives one 0–100 quality value per paragraph, in order.
-- Base every claim on the provided match evidence where possible; the evidence lines cite what independent readings repeatedly said.`;
+- The arc array gives one 0–100 quality value per paragraph, in order. Move it: paragraphs differ, and a flat arc tells the writer nothing.
+- biggest_positive and biggest_detractor each name a specific location in the essay — a scene, a paragraph, a line — not a general quality.
+- Base every claim on the provided match evidence. Evidence lines are prefixed with how many independent readings made the point; weight them accordingly, and lead with what the most readings said. A point made by one reading is an observation, not a finding — do not present it as a pattern.`;
+
+/** A reason several readings gave, with how many gave it. */
+export interface EvidenceTheme {
+  text: string;
+  count: number;
+}
 
 export interface SynthesisEvidence {
   score: number;
-  wins: string[];
-  losses: string[];
-  differentiators: string[];
-  producibility: string[];
+  wins: EvidenceTheme[];
+  losses: EvidenceTheme[];
+  differentiators: EvidenceTheme[];
+  producibility: EvidenceTheme[];
   metPersonMoments: string[];
   wastedOpportunities: string[];
   directionFlags: string[];
+  totalWins: number;
+  totalLosses: number;
+  totalReadings: number;
   proseScore: number | null;
   proseNote: string | null;
   paragraphCount: number;
 }
 
 export function synthesisUser(essay: string, ev: SynthesisEvidence): string {
+  /** Themes carry their denominator so the model can tell a pattern from a
+   *  one-off, which is the whole point of running many readings. */
+  const themes = (label: string, items: EvidenceTheme[], total: number) =>
+    items.length
+      ? `${label}:\n${items
+          .map((i) =>
+            i.count >= 2 && total >= 2
+              ? `- [${i.count} of ${total} readings] ${i.text}`
+              : `- [1 reading] ${i.text}`
+          )
+          .join("\n")}`
+      : "";
   const list = (label: string, items: string[]) =>
     items.length ? `${label}:\n${items.map((i) => `- ${i}`).join("\n")}` : "";
+
   return [
     `ESSAY (${ev.paragraphCount} paragraphs):\n\n${essay}`,
-    `\nEVIDENCE FROM ${ev.wins.length + ev.losses.length} HEAD-TO-HEAD READINGS (score ${ev.score.toFixed(1)}/100):`,
-    list("Reasons this essay won matchups", ev.wins),
-    list("Reasons this essay lost matchups", ev.losses),
-    list("Recurring decisive differentiators", ev.differentiators),
-    list("Producibility estimates of its revelations", ev.producibility),
+    `\nEVIDENCE FROM ${ev.totalReadings} INDEPENDENT HEAD-TO-HEAD READINGS (score ${ev.score.toFixed(1)}/100, from ${ev.totalWins} wins and ${ev.totalLosses} losses). Bracketed counts say how many readings independently made each point — the higher the count, the more it should shape your feedback.`,
+    themes("Why this essay won matchups", ev.wins, ev.totalWins),
+    themes("Why this essay lost matchups", ev.losses, ev.totalLosses),
+    themes("What separated it, win or lose", ev.differentiators, ev.totalReadings),
+    themes("How producible readers judged its revelations", ev.producibility, ev.totalReadings),
     list("Moments a real person became visible", ev.metPersonMoments),
     list("Wasted opportunities", ev.wastedOpportunities),
     list("Direction flags", ev.directionFlags),
     ev.proseScore != null
-      ? `Prose craft (separate channel): ${ev.proseScore}/100 — ${ev.proseNote ?? ""}`
+      ? `Prose craft (separate channel, never moves the score): ${ev.proseScore}/100 — ${ev.proseNote ?? ""}`
       : "",
-    `\nProduce the marks (max 14), one arc value per paragraph (exactly ${ev.paragraphCount} values), counts, the single biggest positive, the single biggest detractor, and a structure score (0–100, cohesion/arc only — not prose, not substance).`,
+    `\nProduce: the verdict (3–4 sentences, the first thing the writer reads), the marks (max 14), one arc value per paragraph (exactly ${ev.paragraphCount} values), the single biggest positive, the single biggest detractor, and a structure score (0–100, cohesion/arc only — not prose, not substance).`,
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -290,6 +318,11 @@ export function synthesisUser(essay: string, ev: SynthesisEvidence): string {
 export const SYNTHESIS_SCHEMA = {
   type: "object",
   properties: {
+    verdict: {
+      type: "string",
+      description:
+        "3–4 sentences: what the essay is doing, where it stops short, why that holds it at this score.",
+    },
     arc: { type: "array", items: { type: "number", minimum: 0, maximum: 100 } },
     marks: {
       type: "array",
@@ -310,7 +343,14 @@ export const SYNTHESIS_SCHEMA = {
     biggest_detractor: { type: "string" },
     structure_score: { type: "number", minimum: 0, maximum: 100 },
   },
-  required: ["arc", "marks", "biggest_positive", "biggest_detractor", "structure_score"],
+  required: [
+    "verdict",
+    "arc",
+    "marks",
+    "biggest_positive",
+    "biggest_detractor",
+    "structure_score",
+  ],
   additionalProperties: false,
 } as const;
 
@@ -321,6 +361,7 @@ export const SYNTHESIS_SCHEMA = {
  * token caps (e.g. Groq's 6k TPM on llama-3.1-8b-instant).
  */
 export const SYNTHESIS_HINT = `{
+  "verdict": "3-4 sentences to the writer: what the essay does, where it stops short, why it sits at this score",
   "arc": [<0-100>, ...],   // exactly one value per paragraph, in order
   "marks": [   // up to 14, each excerpt a VERBATIM substring of the essay
     {
@@ -331,7 +372,7 @@ export const SYNTHESIS_HINT = `{
       "impact": "honest range like \\"+2-4\\", or null"
     }
   ],
-  "biggest_positive": "the single biggest positive, one sentence",
-  "biggest_detractor": "the single biggest detractor, one sentence",
+  "biggest_positive": "the single biggest positive, naming where it happens",
+  "biggest_detractor": "the single biggest detractor, naming where it happens",
   "structure_score": <0-100, cohesion/arc only>
 }`;

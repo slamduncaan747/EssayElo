@@ -1384,6 +1384,25 @@ select {
   color: var(--on-dark);
 }
 
+/* The verdict — the paragraph the writer reads first. */
+.verdict {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s4) var(--s4) var(--s4) var(--s5);
+  border-left: 3px solid var(--gold);
+  background: var(--dark-raised);
+  border-radius: 0 var(--r2) var(--r2) 0;
+  margin-bottom: var(--s2);
+}
+.verdict p {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.7;
+  color: var(--on-dark);
+}
+
 /* notes */
 .note-row {
   display: grid;
