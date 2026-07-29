@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Icon, { type IconName } from "@/components/Icon";
 import { Medal, Rank, ScoreRing } from "@/components/Score";
-import { TIERS, tierRange } from "@/lib/tier";
+import { TIERS } from "@/lib/tier";
 import TopNav from "@/components/TopNav";
 
 const STEPS: { icon: IconName; tint: string; ink: string; h: string; p: string }[] = [
@@ -160,48 +160,6 @@ export default function Landing() {
               </span>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section className="band band-pad" style={{ paddingTop: 0 }}>
-        <div className="section-head">
-          <span className="label">The ladder</span>
-          <h2 className="h1">Six ranks. Almost nobody reaches the top.</h2>
-          <p className="lede">
-            45 is a genuinely well-written essay — the honest middle of a strong applicant
-            pool. Polish gets you there. Only revealing a person few others could reveal
-            climbs higher.
-          </p>
-        </div>
-        <div className="ladder">
-          {TIERS.map((t, i) => (
-            <div key={t.key} className={`rung rung-w${TIERS.length - i}`}>
-              <span className="rung-score num" style={{ color: t.ink }}>
-                {tierRange(t)}
-              </span>
-              <span className="rung-body">
-                <span className="rung-name" style={{ color: t.ink }}>
-                  <Rank tier={t} />
-                </span>
-                <span className="rung-blurb">{t.blurb}</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="band band-pad" style={{ paddingTop: 0 }}>
-        <div className="cta-band">
-          <h2 className="display" style={{ fontSize: "clamp(30px,3.6vw,44px)" }}>
-            Find out where you actually stand.
-          </h2>
-          <p className="lede" style={{ color: "var(--on-dark-2)", maxWidth: 470 }}>
-            Three free evaluations a month. No card, and no paywall in front of your number.
-          </p>
-          <Link href="/signup" className="btn btn-gold btn-xl">
-            Score your essay free
-            <Icon name="arrowRight" size={20} />
-          </Link>
         </div>
       </section>
 

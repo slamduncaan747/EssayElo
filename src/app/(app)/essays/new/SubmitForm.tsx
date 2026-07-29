@@ -79,7 +79,7 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
-      router.push(`/essays/${data.essay_id}`);
+      router.push(`/essays/${data.essay_id}?fresh=1`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
       setSubmitting(false);

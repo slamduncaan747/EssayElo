@@ -6,15 +6,18 @@ import {
   validateTitle,
   wordCount,
 } from "@/lib/validate";
-import {
-  assertFullEvalAllowed,
-  assertNoRunningEvaluation,
-  matchBudgetFor,
-} from "@/lib/quota";
+import { assertFullEvalAllowed } from "@/lib/quota";
+import { runStubEvaluation } from "@/lib/evaluate";
 
 export const runtime = "nodejs";
 
-/** Create an essay + draft 1 and start its full evaluation. */
+/**
+ * Create an essay + draft 1 and score it immediately.
+ *
+ * Scoring is a local stub for now (see src/lib/evaluate.ts) — a real,
+ * separately-hosted engine will replace it, but the row shape (status
+ * "done" up front, elo/ci/result populated) stays the same either way.
+ */
 export async function POST(req: Request) {
   try {
     const ctx = await requireUser();
@@ -25,7 +28,6 @@ export async function POST(req: Request) {
     const essayType = validateEssayType(body.essay_type);
 
     await assertFullEvalAllowed(ctx.db, ctx.user.id, ctx.plan);
-    await assertNoRunningEvaluation(ctx.db, ctx.user.id);
 
     const { data: essay, error: essayErr } = await ctx.db
       .from("essays")
@@ -46,6 +48,7 @@ export async function POST(req: Request) {
       .single();
     if (draftErr) throw new Error(draftErr.message);
 
+    const scored = runStubEvaluation(content);
     const { data: evaluation, error: evalErr } = await ctx.db
       .from("evaluations")
       .insert({
@@ -53,7 +56,12 @@ export async function POST(req: Request) {
         draft_id: draft.id,
         user_id: ctx.user.id,
         kind: "full",
-        budget: await matchBudgetFor(ctx.db, ctx.plan),
+        budget: 1,
+        matches_done: 1,
+        status: "done",
+        phase: "done",
+        ...scored,
+        completed_at: new Date().toISOString(),
       })
       .select()
       .single();

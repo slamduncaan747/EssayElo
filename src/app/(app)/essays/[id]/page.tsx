@@ -1,8 +1,6 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import EvaluatingView from "@/components/EvaluatingView";
-import ReviewView from "@/components/ReviewView";
-import RetryEvaluate from "@/components/RetryEvaluate";
+import EssayResult from "@/components/EssayResult";
 import { getEssayBundle, getProfile, listEssays } from "@/lib/data";
 import { evaluationView } from "@/lib/serialize";
 
@@ -10,10 +8,13 @@ export const dynamic = "force-dynamic";
 
 export default async function EssayReviewPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ fresh?: string }>;
 }) {
   const { id } = await params;
+  const { fresh } = await searchParams;
   const [profile, items, bundle] = await Promise.all([
     getProfile(),
     listEssays(),
@@ -23,56 +24,24 @@ export default async function EssayReviewPage({
   if (!bundle) notFound();
 
   const { essay, drafts, evaluations } = bundle;
-  const latest = evaluations[0] ?? null;
+  const evaluation = evaluations.find((e) => e.status === "done") ?? null;
+  if (!evaluation) notFound();
 
-  // A finished quick check has its own result screen.
-  if (latest && latest.kind === "quick" && latest.status === "done") {
-    redirect(`/essays/${id}/check/${latest.id}`);
-  }
+  const draft = drafts.find((d) => d.id === evaluation.draft_id) ?? drafts[0];
 
-  const shell = (children: React.ReactNode) => (
+  return (
     <div className="shell shell-doc">
       <Sidebar plan={profile.plan} items={items} active="essays" activeEssayId={id} />
-      <main className="main">{children}</main>
+      <main className="main">
+        <EssayResult
+          title={essay.title}
+          version={draft?.version ?? 1}
+          content={draft?.content ?? ""}
+          view={evaluationView(evaluation, profile.plan)}
+          plan={profile.plan}
+          fresh={fresh === "1"}
+        />
+      </main>
     </div>
-  );
-
-  if (latest && latest.status === "running") {
-    const draft = drafts.find((d) => d.id === latest.draft_id) ?? drafts[0];
-    return shell(
-      <EvaluatingView
-        evaluationId={latest.id}
-        title={essay.title}
-        version={draft?.version ?? 1}
-        content={draft?.content ?? ""}
-        initial={{
-          status: latest.status,
-          phase: latest.phase,
-          matches_done: latest.matches_done,
-          budget: latest.budget,
-        }}
-      />
-    );
-  }
-
-  const latestFullDone = evaluations.find((e) => e.kind === "full" && e.status === "done");
-  if (!latestFullDone) {
-    return shell(
-      <div className="page page-narrow" style={{ maxWidth: 560 }}>
-        <RetryEvaluate essayId={id} title={essay.title} />
-      </div>
-    );
-  }
-
-  const draft = drafts.find((d) => d.id === latestFullDone.draft_id) ?? drafts[0];
-  return shell(
-    <ReviewView
-      essayId={id}
-      title={essay.title}
-      version={draft?.version ?? 1}
-      content={draft?.content ?? ""}
-      view={evaluationView(latestFullDone, profile.plan)}
-      plan={profile.plan}
-    />
   );
 }

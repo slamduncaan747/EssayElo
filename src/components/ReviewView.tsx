@@ -22,14 +22,12 @@ function markTitle(kind: MarkKind, note: string): string {
 }
 
 export default function ReviewView({
-  essayId,
   title,
   version,
   content,
   view,
   plan,
 }: {
-  essayId: string;
   title: string;
   version: number;
   content: string;
@@ -86,15 +84,6 @@ export default function ReviewView({
           <div className="doc-title">
             <b>{title}</b>
             <span className="chip">Draft {version}</span>
-          </div>
-          <div className="tabs">
-            <span className="active">Review</span>
-            <Link href={`/essays/${essayId}/edit`}>Edit</Link>
-            {isPlus ? (
-              <Link href={`/essays/${essayId}/analysis`}>Analysis</Link>
-            ) : (
-              <Link href={`/essays/${essayId}/history`}>History</Link>
-            )}
           </div>
         </div>
 
@@ -224,82 +213,91 @@ export default function ReviewView({
                 </div>
               ) : null}
 
-              <div className="spread" style={{ marginBottom: 2 }}>
-                <span className="label">
-                  Notes · {idx != null ? idx + 1 : 1} of {marks.length}
-                </span>
-                <div className="meter meter-sm meter-dark" style={{ width: 88 }}>
-                  <div
-                    className="meter-fill"
-                    style={{
-                      left: 0,
-                      width: `${marks.length ? (((idx ?? 0) + 1) / marks.length) * 100 : 0}%`,
-                      background: "var(--gold)",
-                    }}
-                  />
-                </div>
-              </div>
+              {marks.length > 0 ? (
+                <>
+                  <div className="spread" style={{ marginBottom: 2 }}>
+                    <span className="label">
+                      Notes · {idx != null ? idx + 1 : 1} of {marks.length}
+                    </span>
+                    <div className="meter meter-sm meter-dark" style={{ width: 88 }}>
+                      <div
+                        className="meter-fill"
+                        style={{
+                          left: 0,
+                          width: `${(((idx ?? 0) + 1) / marks.length) * 100}%`,
+                          background: "var(--gold)",
+                        }}
+                      />
+                    </div>
+                  </div>
 
-              {marks.map((m, i) => {
-                const meta = KIND[m.kind];
-                if (i === idx) {
-                  return (
-                    <div key={i} className="note-card pop-in">
-                      <div className="note-head">
-                        <span className="note-badge" style={{ background: meta.bg, color: meta.fg }}>
+                  {marks.map((m, i) => {
+                    const meta = KIND[m.kind];
+                    if (i === idx) {
+                      return (
+                        <div key={i} className="note-card pop-in">
+                          <div className="note-head">
+                            <span className="note-badge" style={{ background: meta.bg, color: meta.fg }}>
+                              {i + 1}
+                            </span>
+                            <span>{markTitle(m.kind, m.note)}</span>
+                          </div>
+                          <span className="note-body">{m.note}</span>
+                          {m.fix ? (
+                            <div className="note-fix">
+                              <b>Try this</b>
+                              {m.fix}
+                            </div>
+                          ) : null}
+                          <div className="note-foot">
+                            <span>
+                              {m.impact ? (
+                                <>
+                                  Worth <b>{m.impact}</b>
+                                </>
+                              ) : (
+                                meta.label
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <button key={i} className="note-row" onClick={() => setActive(i)}>
+                        <span
+                          className="note-badge"
+                          style={{ background: meta.bg, color: meta.fg, opacity: 0.8 }}
+                        >
                           {i + 1}
                         </span>
                         <span>{markTitle(m.kind, m.note)}</span>
-                      </div>
-                      <span className="note-body">{m.note}</span>
-                      {m.fix ? (
-                        <div className="note-fix">
-                          <b>Try this</b>
-                          {m.fix}
-                        </div>
-                      ) : null}
-                      <div className="note-foot">
-                        <span>
-                          {m.impact ? (
-                            <>
-                              Worth <b>{m.impact}</b>
-                            </>
-                          ) : (
-                            meta.label
-                          )}
-                        </span>
-                        <Link href={`/essays/${essayId}/edit`}>Fix in editor →</Link>
-                      </div>
-                    </div>
-                  );
-                }
-                return (
-                  <button key={i} className="note-row" onClick={() => setActive(i)}>
-                    <span
-                      className="note-badge"
-                      style={{ background: meta.bg, color: meta.fg, opacity: 0.8 }}
-                    >
-                      {i + 1}
-                    </span>
-                    <span>{markTitle(m.kind, m.note)}</span>
-                  </button>
-                );
-              })}
+                      </button>
+                    );
+                  })}
+                </>
+              ) : (
+                <span className="small" style={{ color: "var(--on-dark-3)" }}>
+                  Line-by-line notes are coming with the next version of the engine.
+                </span>
+              )}
             </div>
 
-            <div className="panel-foot">
-              <button
-                className="btn btn-onDark btn-icon"
-                onClick={() => step(-1)}
-                aria-label="Previous note"
-              >
-                <Icon name="arrowRight" size={17} style={{ transform: "rotate(180deg)" }} />
-              </button>
-              <button className="btn btn-gold grow" onClick={() => step(1)}>
-                Next note
-                <Icon name="arrowRight" size={17} />
-              </button>
-            </div>
+            {marks.length > 0 ? (
+              <div className="panel-foot">
+                <button
+                  className="btn btn-onDark btn-icon"
+                  onClick={() => step(-1)}
+                  aria-label="Previous note"
+                >
+                  <Icon name="arrowRight" size={17} style={{ transform: "rotate(180deg)" }} />
+                </button>
+                <button className="btn btn-gold grow" onClick={() => step(1)}>
+                  Next note
+                  <Icon name="arrowRight" size={17} />
+                </button>
+              </div>
+            ) : null}
           </>
         ) : (
           <>

@@ -3,12 +3,10 @@ import Sidebar from "@/components/Sidebar";
 import Icon from "@/components/Icon";
 import { Medal, Rank, ScoreMeter } from "@/components/Score";
 import { getProfile, listEssays } from "@/lib/data";
-import { supabaseServer } from "@/lib/supabase/server";
 import { bandFromElo, eloToScore } from "@/lib/engine/scale";
 import { tierForBand, tierForScore } from "@/lib/tier";
 import { fullEvalsUsedThisMonth, TIER } from "@/lib/quota";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import type { Evaluation } from "@/lib/types";
 
 export const metadata = { title: "Your essays — Margin" };
 export const dynamic = "force-dynamic";
@@ -38,30 +36,6 @@ export default async function Dashboard({
     .map((i) => eloToScore(i.latestEval!.elo!));
   const best = scored.length ? Math.max(...scored) : null;
   const bestTier = best != null ? tierForScore(best) : null;
-
-  // Progress strip: every finished score for the most recently updated essay.
-  const progressItem = items.find((i) => i.latestEval && i.latestEval.status === "done");
-  let progress: { title: string; id: string; bars: number[]; delta: number | null } | null = null;
-  if (progressItem) {
-    const supabase = await supabaseServer();
-    const { data: evals } = await supabase
-      .from("evaluations")
-      .select("elo, status, created_at")
-      .eq("essay_id", progressItem.essay.id)
-      .eq("status", "done")
-      .order("created_at", { ascending: true });
-    const scores = ((evals ?? []) as Pick<Evaluation, "elo">[])
-      .filter((e) => e.elo != null)
-      .map((e) => eloToScore(e.elo!));
-    if (scores.length > 0) {
-      progress = {
-        title: progressItem.essay.title,
-        id: progressItem.essay.id,
-        bars: scores.slice(-8),
-        delta: scores.length > 1 ? Math.round(scores[scores.length - 1] - scores[0]) : null,
-      };
-    }
-  }
 
   return (
     <div className="shell">
@@ -126,75 +100,12 @@ export default async function Dashboard({
                 <span>Evaluations left</span>
               </div>
             </div>
-            <div className="stat">
-              <span
-                className="stat-icon"
-                style={{
-                  background: isPlus ? "var(--gold-50)" : "var(--sunken)",
-                  color: isPlus ? "var(--gold-press)" : "var(--text-3)",
-                }}
-              >
-                <Icon name="crown" size={21} />
-              </span>
-              <div>
-                <b style={{ textTransform: "capitalize" }}>{profile.plan}</b>
-                <span>{isPlus ? "Exact scores on" : "Bands only"}</span>
-              </div>
-            </div>
           </div>
-
-          {progress ? (
-            <Link href={`/essays/${progress.id}`} className="card card-tap card-pad progress-card">
-              <div className="spread wrap" style={{ gap: "var(--s6)" }}>
-                <div className="stack g2" style={{ minWidth: 170 }}>
-                  <span className="label">Progress</span>
-                  <span className="h3">{progress.title}</span>
-                  <span className="tiny">across {progress.bars.length} evaluations</span>
-                </div>
-                <div className="trend grow">
-                  {progress.bars.map((s, i) => {
-                    const last = i === progress!.bars.length - 1;
-                    return (
-                      <div key={i} className="trend-col">
-                        <span className={last ? "now" : undefined}>{Math.round(s)}</span>
-                        <div
-                          className="trend-bar"
-                          style={{
-                            height: `${Math.max(s, 8)}%`,
-                            background: last ? tierForScore(s).color : "var(--n-200)",
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-                {progress.delta != null ? (
-                  <div className="stack g1" style={{ alignItems: "flex-end" }}>
-                    <span
-                      className="h1 num"
-                      style={{
-                        color: progress.delta >= 0 ? "var(--green-ink)" : "var(--red-ink)",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
-                      }}
-                    >
-                      {progress.delta >= 0 ? <Icon name="arrowUp" size={20} /> : null}
-                      {progress.delta >= 0 ? "+" : ""}
-                      {progress.delta}
-                    </span>
-                    <span className="tiny">points since draft 1</span>
-                  </div>
-                ) : null}
-              </div>
-            </Link>
-          ) : null}
 
           <div className="essay-grid">
             {items.map(({ essay, latestDraft, latestEval }) => {
               const done =
                 latestEval?.status === "done" && latestEval.elo != null && latestEval.ci != null;
-              const running = latestEval?.status === "running";
               const band = done ? bandFromElo(latestEval!.elo!, latestEval!.ci!) : null;
               const exact = done ? eloToScore(latestEval!.elo!) : null;
               const tier = band ? tierForBand(band.low, band.high) : null;
@@ -205,32 +116,12 @@ export default async function Dashboard({
                 : "—";
 
               return (
-                <div key={essay.id} className="card card-tap essay-card">
+                <Link key={essay.id} href={`/essays/${essay.id}`} className="card card-tap essay-card">
                   <div className="essay-card-head">
                     <span className="essay-card-title">{essay.title}</span>
-                    <span className="chip">Draft {latestDraft?.version ?? 1}</span>
                   </div>
 
-                  {running ? (
-                    <div className="stack g3">
-                      <span className="live">
-                        <span className="pulse-dot" />
-                        Evaluating
-                      </span>
-                      <div className="meter meter-sm">
-                        <div
-                          className="meter-fill"
-                          style={{
-                            left: 0,
-                            width: `${Math.round((latestEval!.matches_done / Math.max(latestEval!.budget, 1)) * 100)}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="tiny">
-                        {latestEval!.matches_done} of {latestEval!.budget} matchups judged
-                      </span>
-                    </div>
-                  ) : done ? (
+                  {done ? (
                     <div className="stack g4">
                       <div className="row g4">
                         <Medal value={exact!} display={display} size={62} />
@@ -276,17 +167,7 @@ export default async function Dashboard({
                     </span>
                     <span className="tiny">{fmtDate(essay.updated_at)}</span>
                   </div>
-
-                  <div className="essay-card-foot">
-                    <Link href={`/essays/${essay.id}`} className="btn btn-plain btn-sm">
-                      Review
-                    </Link>
-                    <Link href={`/essays/${essay.id}/edit`} className="btn btn-primary btn-sm">
-                      <Icon name="pencil" size={14} />
-                      Edit
-                    </Link>
-                  </div>
-                </div>
+                </Link>
               );
             })}
 

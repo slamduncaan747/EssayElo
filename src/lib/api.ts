@@ -4,7 +4,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { supabaseServer } from "./supabase/server";
 import { supabaseAdmin } from "./supabase/admin";
 import { ApiError } from "./validate";
-import type { Essay, Evaluation, Plan, Profile } from "./types";
+import type { Plan, Profile } from "./types";
 
 export interface Ctx {
   user: User;
@@ -30,31 +30,6 @@ export async function requireUser(): Promise<Ctx> {
     .single();
   if (!profile) throw new ApiError(401, "Profile missing");
   return { user, profile: profile as Profile, plan: (profile as Profile).plan, db };
-}
-
-export async function requireOwnedEssay(ctx: Ctx, essayId: string): Promise<Essay> {
-  const { data } = await ctx.db
-    .from("essays")
-    .select("*")
-    .eq("id", essayId)
-    .eq("user_id", ctx.user.id)
-    .single();
-  if (!data) throw new ApiError(404, "Essay not found");
-  return data as Essay;
-}
-
-export async function requireOwnedEvaluation(
-  ctx: Ctx,
-  evalId: string
-): Promise<Evaluation> {
-  const { data } = await ctx.db
-    .from("evaluations")
-    .select("*")
-    .eq("id", evalId)
-    .eq("user_id", ctx.user.id)
-    .single();
-  if (!data) throw new ApiError(404, "Evaluation not found");
-  return data as Evaluation;
 }
 
 export function handleApiError(e: unknown): NextResponse {
