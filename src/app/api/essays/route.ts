@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       .single();
     if (draftErr) throw new Error(draftErr.message);
 
-    const scored = runStubEvaluation(content);
+    const scored = runStubEvaluation();
     const { data: evaluation, error: evalErr } = await ctx.db
       .from("evaluations")
       .insert({

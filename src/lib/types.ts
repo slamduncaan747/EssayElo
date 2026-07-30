@@ -96,33 +96,40 @@ export interface MatchRow {
   opp_elo: number;
 }
 
-export type MarkKind = "standout" | "solid" | "weak" | "cliche";
+/** The seven axes judges compare essays on, each 0–1. */
+export interface DimensionScores {
+  distinctiveness: number;
+  specificity: number;
+  reflection: number;
+  voice: number;
+  structure: number;
+  prompt_fulfillment: number;
+  memorability: number;
+}
 
-export interface EssayMark {
-  /** Verbatim excerpt from the essay this mark anchors to. */
-  excerpt: string;
-  kind: MarkKind;
-  /** One-beat explanation, diagnosis-only. */
-  note: string;
-  /** A question or deletion suggestion — never supplied content. */
-  fix: string | null;
-  /** e.g. "+2–4" (points on the 0–100 scale) */
-  impact: string | null;
+export interface RecurringPoint {
+  category: keyof DimensionScores | string;
+  frequency: number;
+  summary: string;
+}
+
+export interface CoachingReport {
+  reader_impression: { learns: string; remembers: string; unclear: string };
+  strengths: { dimension: string; evidence: string }[];
+  weaknesses: { dimension: string; evidence: string; why_it_matters: string }[];
+  revision_questions: string[];
+  next_objective: string;
 }
 
 export interface SynthesisResult {
-  /** The lead paragraph the writer reads first. Optional: rows written before
-   *  the verdict existed simply don't carry one. */
-  verdict?: string | null;
-  /** Per-paragraph quality, 0–100. */
-  arc: number[];
-  marks: EssayMark[];
-  counts: { standout: number; solid: number; weak: number; cliche: number };
-  biggest_positive: string;
-  biggest_detractor: string;
-  structure_score: number;
-  /** Free tier shows counts + arc; note bodies are Plus-only (gated at the API). */
-  readers_split: boolean;
+  wins: number;
+  losses: number;
+  ties: number;
+  dimensions: DimensionScores;
+  recurring_strengths: RecurringPoint[];
+  recurring_weaknesses: RecurringPoint[];
+  /** Plus-only deep coaching pass; absent until synthesized. */
+  coaching: CoachingReport | null;
 }
 
 export interface CorpusEssay {
@@ -138,24 +145,16 @@ export interface CorpusEssay {
 /** Public (gated) shape returned to the client for an evaluation. */
 export interface EvaluationView {
   id: string;
-  kind: EvaluationKind;
   status: EvaluationStatus;
-  phase: EvaluationPhase;
-  matches_done: number;
-  budget: number;
   band: { low: number; high: number } | null;
   exact: number | null; // Plus only
-  prose_score: number | null; // Plus only
-  structure_score: number | null; // Plus only
-  prose_tag: ProseTag | null; // Plus only
-  direction_flag: string | null;
-  verdict: string | null; // Plus only
-  arc: number[] | null;
-  counts: SynthesisResult["counts"] | null;
-  marks: EssayMark[] | null; // note/fix bodies stripped on free
-  biggest_positive: string | null; // Plus only
-  biggest_detractor: string | null; // Plus only
-  readers_split: boolean;
+  wins: number;
+  losses: number;
+  ties: number;
+  dimensions: DimensionScores | null;
+  recurring_strengths: RecurringPoint[];
+  recurring_weaknesses: RecurringPoint[];
+  coaching: CoachingReport | null; // Plus only
   created_at: string;
   completed_at: string | null;
 }

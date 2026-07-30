@@ -8,7 +8,7 @@ import { tierForBand, tierForScore } from "@/lib/tier";
 import { fullEvalsUsedThisMonth, TIER } from "@/lib/quota";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-export const metadata = { title: "Your essays — Margin" };
+export const metadata = { title: "Your evaluations — Margin" };
 export const dynamic = "force-dynamic";
 
 function fmtDate(iso: string): string {
@@ -57,16 +57,16 @@ export default async function Dashboard({
 
           <div className="masthead">
             <div className="stack g2">
-              <h1 className="h1">Your essays</h1>
+              <h1 className="h1">Your evaluations</h1>
               <span className="small">
                 {items.length
-                  ? `${items.length} essay${items.length === 1 ? "" : "s"} · ${left} of ${limit} evaluations left this month`
+                  ? `${items.length} evaluation${items.length === 1 ? "" : "s"} · ${left} of ${limit} left this month`
                   : "Nothing scored yet — paste an essay to get your first number."}
               </span>
             </div>
             <Link href="/essays/new" className="btn btn-primary">
               <Icon name="plus" size={18} />
-              Score an essay
+              New evaluation
             </Link>
           </div>
 
@@ -77,7 +77,7 @@ export default async function Dashboard({
               </span>
               <div>
                 <b>{items.length}</b>
-                <span>Essays</span>
+                <span>Evaluations</span>
               </div>
             </div>
             <div className="stat">
@@ -175,7 +175,7 @@ export default async function Dashboard({
               <span className="add-card-mark">
                 <Icon name="plus" size={24} strokeWidth={2.4} />
               </span>
-              <span className="h3">Score a new essay</span>
+              <span className="h3">New evaluation</span>
               <span className="tiny">Paste it in — we clean the formatting</span>
             </Link>
           </div>

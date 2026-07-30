@@ -6,8 +6,8 @@ import { signOut } from "@/app/(auth)/actions";
 import Icon, { type IconName } from "./Icon";
 
 const NAV: { href: string; label: string; icon: IconName; key: string }[] = [
-  { href: "/dashboard", label: "My essays", icon: "essays", key: "essays" },
-  { href: "/essays/new", label: "Score an essay", icon: "plus", key: "drafts" },
+  { href: "/dashboard", label: "My evaluations", icon: "essays", key: "essays" },
+  { href: "/essays/new", label: "New evaluation", icon: "plus", key: "drafts" },
   { href: "/how-scoring-works", label: "How scoring works", icon: "compass", key: "how" },
 ];
 
