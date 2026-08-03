@@ -1,7 +1,6 @@
 import "server-only";
 import { supabaseServer } from "./supabase/server";
 import type { Draft, Essay, Evaluation, Plan, Profile } from "./types";
-import { bandFromElo } from "./engine/scale";
 
 /**
  * Read helpers for server components. These use the request-scoped client, so
@@ -55,9 +54,9 @@ export async function listEssays(): Promise<EssayListItem[]> {
 }
 
 export function bandLabel(ev: Evaluation | null): string | null {
-  if (!ev || ev.status !== "done" || ev.elo == null || ev.ci == null) return null;
-  const b = bandFromElo(ev.elo, ev.ci);
-  return `${b.low}–${b.high}`;
+  if (!ev || ev.status !== "done" || !ev.result) return null;
+  const { low, high } = ev.result.scoreInterval;
+  return `${low}–${high}`;
 }
 
 export async function getEssayBundle(essayId: string): Promise<{

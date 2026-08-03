@@ -1,32 +1,57 @@
-import type { Evaluation, EvaluationView, Plan } from "./types";
-import { bandFromElo, exactScore } from "./engine/scale";
+import type { Evaluation, Plan } from "./types";
+import type { EvaluationResult } from "./evaluation/types";
 
 /**
- * Gate an evaluation row for the client by plan.
- *
- * Free tier: band (no false precision), win/loss/tie record, the dimension
- * hexagon, and short recurring strength/weakness summaries. Plus unlocks the
- * exact score and the full coaching report (reader impression, evidence,
- * revision questions, next-draft objective).
+ * Gate a completed evaluation's result for the client by plan, mirroring
+ * the previous free/plus boundary: free sees the score band, the tier, the
+ * dimension profile, and the strongest-signal/focus-area summary; Plus
+ * unlocks the exact decimal score and the full written feedback report
+ * (reader snapshot, expandable dimension evidence, strength cards, revision
+ * priorities, next-draft plan). Stripped server-side, not just hidden in
+ * the UI, so a free account never receives Plus-only content over the wire.
  */
+export interface EvaluationView {
+  id: string;
+  status: Evaluation["status"];
+  feedbackStatus: Evaluation["feedback_status"];
+  isPlus: boolean;
+  error: string | null;
+  feedbackError: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  result: EvaluationResult | null;
+}
+
 export function evaluationView(ev: Evaluation, plan: Plan): EvaluationView {
   const isPlus = plan === "plus";
-  const done = ev.status === "done" && ev.elo != null && ev.ci != null;
-  const result = done ? ev.result : null;
+  let result: EvaluationResult | null = ev.result;
+
+  if (result && !isPlus) {
+    result = {
+      ...result,
+      readerSnapshot: { currentImpression: "", memorableElement: "", missingDimension: "" },
+      dimensionDetails: result.dimensionDetails.map((d) => ({
+        ...d,
+        excerpt: null,
+        whatReadersSaw: "",
+        revisionQuestion: "",
+        confidenceLanguage: "",
+      })),
+      strengths: [],
+      revisionPriorities: [],
+      nextDraftPlan: [],
+    };
+  }
 
   return {
     id: ev.id,
     status: ev.status,
-    band: done ? bandFromElo(ev.elo!, ev.ci!) : null,
-    exact: done && isPlus ? exactScore(ev.elo!) : null,
-    wins: result?.wins ?? 0,
-    losses: result?.losses ?? 0,
-    ties: result?.ties ?? 0,
-    dimensions: result?.dimensions ?? null,
-    recurring_strengths: result?.recurring_strengths ?? [],
-    recurring_weaknesses: result?.recurring_weaknesses ?? [],
-    coaching: done && isPlus ? (result?.coaching ?? null) : null,
-    created_at: ev.created_at,
-    completed_at: ev.completed_at,
+    feedbackStatus: ev.feedback_status,
+    isPlus,
+    error: ev.error,
+    feedbackError: ev.feedback_error,
+    createdAt: ev.created_at,
+    completedAt: ev.completed_at,
+    result,
   };
 }

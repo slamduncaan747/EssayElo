@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Icon from "@/components/Icon";
-import { DimensionRadar, ScoreRing } from "@/components/Score";
+import { ScoreRing } from "@/components/Score";
+import { DimensionRadar } from "@/components/evaluation/DimensionRadar";
 import TopNav from "@/components/TopNav";
 
 export default function Landing() {
@@ -26,8 +27,8 @@ export default function Landing() {
             <span style={{ color: "var(--brand)" }}>Most people never learn it.</span>
           </h1>
           <p className="lede" style={{ maxWidth: 480 }}>
-            Margin scores your college essay out of 100 by playing it against thousands of
-            others — deliberately stringent, the way admissions actually reads.
+            Margin evaluates your essay against a carefully ranked reference field —
+            deliberately stringent, so a strong score actually means something.
           </p>
           <div className="row wrap g4">
             <Link href="/dashboard" className="btn btn-primary btn-xl">
@@ -46,20 +47,20 @@ export default function Landing() {
             </div>
 
             <div className="stack g4" style={{ alignItems: "center" }}>
-              <ScoreRing value={58} display="54–63" label="out of 100" size={140} onDark />
+              <ScoreRing value={58} display="54–63" label="MARGIN SCORE" size={140} onDark />
             </div>
 
             <div className="stack g2" style={{ alignItems: "center" }}>
               <span className="label">Dimension profile</span>
               <DimensionRadar
                 dimensions={{
-                  distinctiveness: 0.68,
-                  specificity: 0.74,
-                  reflection: 0.31,
-                  voice: 0.79,
-                  structure: 0.52,
-                  prompt_fulfillment: 0.83,
-                  memorability: 0.58,
+                  distinctiveness: 68,
+                  specificity: 74,
+                  reflection: 31,
+                  voice: 79,
+                  structure: 52,
+                  prose_control: 83,
+                  memorability: 58,
                 }}
                 size={170}
                 onDark

@@ -1,46 +1,64 @@
 "use client";
 
-import { useState } from "react";
-import type { EvaluationView } from "@/lib/types";
-import EvaluatingView from "./EvaluatingView";
-import ReviewView from "./ReviewView";
+import { EvaluationExperience } from "./evaluation/EvaluationExperience";
+import { FeedbackExperience } from "./feedback/FeedbackExperience";
+import type { EvaluationView } from "@/lib/serialize";
+import type { FixtureScenario } from "@/lib/evaluation/transport";
 
-/** Shows the evaluating animation once, right after creation, then the review. */
+/**
+ * Dispatches to the right screen for an essay's current evaluation state.
+ * A fully "done" evaluation (revisited later, not fresh off submission)
+ * skips the live machinery entirely and renders the feedback dashboard
+ * straight from the server-provided result — no need to replay a transport
+ * for something that already settled.
+ */
 export default function EssayResult({
   title,
   version,
   content,
+  essayId,
   view,
   plan,
-  fresh,
+  mock,
+  fixtureScenario,
 }: {
   title: string;
   version: number;
   content: string;
+  essayId: string;
   view: EvaluationView;
   plan: "free" | "plus";
-  fresh: boolean;
+  mock: boolean;
+  fixtureScenario?: FixtureScenario;
 }) {
-  const [revealed, setRevealed] = useState(!fresh);
+  const isPlus = plan === "plus";
 
-  if (!revealed) {
+  if (view.status === "done" && view.result) {
     return (
-      <EvaluatingView
+      <FeedbackExperience
         title={title}
         version={version}
+        essayId={essayId}
         content={content}
-        onDone={() => setRevealed(true)}
+        result={view.result}
+        isPlus={isPlus}
+        feedbackStatus={view.feedbackStatus}
+        feedbackError={view.feedbackError}
       />
     );
   }
 
   return (
-    <ReviewView
+    <EvaluationExperience
       title={title}
       version={version}
+      essayId={essayId}
+      evaluationId={view.id}
       content={content}
-      view={view}
-      plan={plan}
+      isPlus={isPlus}
+      mock={mock}
+      fixtureScenario={fixtureScenario}
+      initialStatus={view.status === "failed" ? "failed" : "running"}
     />
   );
 }

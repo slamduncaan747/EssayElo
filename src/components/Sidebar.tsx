@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { bandLabel, type EssayListItem } from "@/lib/data";
-import { exactScore } from "@/lib/engine/scale";
 import type { Plan } from "@/lib/types";
 import { signOut } from "@/app/(auth)/actions";
 import Icon, { type IconName } from "./Icon";
@@ -30,6 +29,7 @@ export default function Sidebar({
   const recent = items.slice(0, 4);
   const pct =
     evalsLeft != null && evalsTotal ? Math.round((evalsLeft / evalsTotal) * 100) : null;
+  const runningEssay = items.find((i) => i.latestEval?.status === "running") ?? null;
 
   return (
     <aside className="rail on-dark-scroll">
@@ -52,9 +52,10 @@ export default function Sidebar({
         <>
           <div className="rail-head">Recent</div>
           {recent.map(({ essay, latestEval }) => {
+            const running = latestEval?.status === "running";
             const score =
-              plan === "plus" && latestEval?.status === "done" && latestEval.elo != null
-                ? exactScore(latestEval.elo).toFixed(1)
+              plan === "plus" && latestEval?.status === "done" && latestEval.result
+                ? latestEval.result.score.toFixed(1)
                 : bandLabel(latestEval);
             return (
               <Link
@@ -63,11 +64,27 @@ export default function Sidebar({
                 className={`recent-item ${essay.id === activeEssayId ? "active" : ""}`}
               >
                 <span>{essay.title}</span>
-                {score ? <b>{score}</b> : null}
+                {running ? (
+                  <span className="recent-live" aria-label="Analysis in progress">
+                    <span className="pulse-dot" />
+                  </span>
+                ) : score ? (
+                  <b>{score}</b>
+                ) : null}
               </Link>
             );
           })}
         </>
+      ) : null}
+
+      {runningEssay ? (
+        <Link href={`/essays/${runningEssay.essay.id}`} className="rail-status">
+          <span className="pulse-dot" />
+          <span className="stack g1">
+            <b>Analysis in progress</b>
+            <span>{runningEssay.essay.title}</span>
+          </span>
+        </Link>
       ) : null}
 
       <div className="push" />

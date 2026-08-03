@@ -23,7 +23,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Margin — your essay has a score",
   description:
-    "Margin evaluates your college essay against thousands of others and returns a score out of 100 — deliberately stringent, the way admissions actually reads.",
+    "Margin evaluates your college essay against a carefully ranked reference field — deliberately stringent, so a strong score actually means something.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

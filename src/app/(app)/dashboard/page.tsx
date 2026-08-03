@@ -3,8 +3,7 @@ import Sidebar from "@/components/Sidebar";
 import Icon from "@/components/Icon";
 import { Medal, Rank, ScoreMeter } from "@/components/Score";
 import { getProfile, listEssays } from "@/lib/data";
-import { bandFromElo, eloToScore } from "@/lib/engine/scale";
-import { tierForBand, tierForScore } from "@/lib/tier";
+import { tierForScore } from "@/lib/tier";
 import { fullEvalsUsedThisMonth, TIER } from "@/lib/quota";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -32,8 +31,8 @@ export default async function Dashboard({
   const isPlus = profile.plan === "plus";
 
   const scored = items
-    .filter((i) => i.latestEval?.status === "done" && i.latestEval.elo != null)
-    .map((i) => eloToScore(i.latestEval!.elo!));
+    .filter((i) => i.latestEval?.status === "done" && i.latestEval.result)
+    .map((i) => i.latestEval!.result!.score);
   const best = scored.length ? Math.max(...scored) : null;
   const bestTier = best != null ? tierForScore(best) : null;
 
@@ -104,15 +103,14 @@ export default async function Dashboard({
 
           <div className="essay-grid">
             {items.map(({ essay, latestDraft, latestEval }) => {
-              const done =
-                latestEval?.status === "done" && latestEval.elo != null && latestEval.ci != null;
-              const band = done ? bandFromElo(latestEval!.elo!, latestEval!.ci!) : null;
-              const exact = done ? eloToScore(latestEval!.elo!) : null;
-              const tier = band ? tierForBand(band.low, band.high) : null;
-              const display = done
+              const done = latestEval?.status === "done" && !!latestEval.result;
+              const running = latestEval?.status === "running";
+              const result = done ? latestEval!.result! : null;
+              const tier = result ? tierForScore(result.score) : null;
+              const display = result
                 ? isPlus
-                  ? exact!.toFixed(1)
-                  : `${band!.low}–${band!.high}`
+                  ? result.score.toFixed(1)
+                  : `${result.scoreInterval.low}–${result.scoreInterval.high}`
                 : "—";
 
               return (
@@ -121,22 +119,32 @@ export default async function Dashboard({
                     <span className="essay-card-title">{essay.title}</span>
                   </div>
 
-                  {done ? (
+                  {result ? (
                     <div className="stack g4">
                       <div className="row g4">
-                        <Medal value={exact!} display={display} size={62} />
+                        <Medal value={result.score} display={display} size={62} />
                         <div className="stack g2">
                           <Rank tier={tier!} />
-                          <span className="tiny">out of 100</span>
+                          <span className="tiny">Margin score</span>
                         </div>
                       </div>
                       <ScoreMeter
-                        low={band!.low}
-                        high={band!.high}
+                        low={result.scoreInterval.low}
+                        high={result.scoreInterval.high}
                         color={tier!.color}
                         ticks={false}
                         small
                       />
+                    </div>
+                  ) : running ? (
+                    <div className="stack g4">
+                      <div className="row g4">
+                        <span className="medal medal-live">
+                          <span className="pulse-dot" />
+                        </span>
+                        <span className="small">Analysis in progress</span>
+                      </div>
+                      <div className="meter meter-sm meter-indeterminate" />
                     </div>
                   ) : (
                     <div className="stack g4">

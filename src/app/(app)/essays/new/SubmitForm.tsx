@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import Icon from "@/components/Icon";
+import { trackEvaluationEvent } from "@/lib/analytics";
 
 const TYPES = [
   "Common App personal statement",
@@ -79,7 +80,8 @@ export default function SubmitForm({ evalsLeft }: { evalsLeft: number }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
-      router.push(`/essays/${data.essay_id}?fresh=1`);
+      trackEvaluationEvent("evaluation_started", { evaluationId: data.evaluation_id });
+      router.push(`/essays/${data.essay_id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
       setSubmitting(false);

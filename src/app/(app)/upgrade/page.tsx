@@ -9,19 +9,19 @@ export const dynamic = "force-dynamic";
 const FREE = [
   { on: true, t: "3 evaluations a month" },
   { on: true, t: "Score band with honest uncertainty" },
-  { on: true, t: "Essay arc by paragraph" },
-  { on: true, t: "Mark counts — standout, weak, cliché" },
+  { on: true, t: "Live seven-dimension profile" },
+  { on: true, t: "Strongest signal & focus area" },
   { on: true, t: "Unlimited quick checks on edits" },
   { on: false, t: "Exact score" },
-  { on: false, t: "Line-by-line notes & fixes" },
+  { on: false, t: "Full written feedback report" },
 ];
 
 const PLUS = [
   { gold: false, t: "Everything in Free" },
   { gold: true, t: "Exact score, to the tenth" },
-  { gold: true, t: "Every line reviewed, with fixes worth points" },
-  { gold: false, t: "Prose vs structure split + reliance check" },
-  { gold: false, t: "Evidence from 25 matchups instead of 10" },
+  { gold: true, t: "Reader snapshot & evidence for every dimension" },
+  { gold: false, t: "Two protected strengths, three revision priorities" },
+  { gold: false, t: "A concrete plan for your next draft" },
   { gold: false, t: "15 evaluations a month" },
 ];
 

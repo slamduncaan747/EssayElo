@@ -8,11 +8,11 @@ export const metadata = { title: "How scoring works — Margin" };
 
 const SECTIONS: { icon: IconName; tint: string; ink: string; h: string; p: string }[] = [
   {
-    icon: "versus",
+    icon: "compass",
     tint: "var(--brand-50)",
     ink: "var(--brand)",
     h: "The score is a percentile, not a grade.",
-    p: "Your number answers one question: what fraction of applicant essays does this outrank? It comes from head-to-head comparisons against a calibrated pool of real and reference essays — the same way chess ratings work. Nobody hand-waves a 7/10.",
+    p: "Your number answers one question: where does this essay fall against a carefully ranked reference field? Margin evaluates your essay by comparing it against that field — the same way chess ratings place a player relative to a pool of games, not a fixed answer key. Nobody hand-waves a 7/10.",
   },
   {
     icon: "target",
@@ -22,32 +22,32 @@ const SECTIONS: { icon: IconName; tint: string; ink: string; h: string; p: strin
     p: "A genuinely well-written, sincere, polished essay scores around 45. That is not an insult — it is the honest middle of a strong applicant pool. Polish gets you to 45. Only revealing a person few others could reveal climbs higher. 80+ is near-nonexistent, and we keep it that way on purpose.",
   },
   {
-    icon: "compass",
+    icon: "chart",
     tint: "var(--gold-50)",
     ink: "var(--gold-press)",
     h: "What actually moves the number.",
-    p: "Each comparison asks one question: which essay leaves the reader knowing a more specific, less producible person? Not which is better written, more moving, or about a weightier topic. A mundane topic revealing a rare person beats a profound topic revealing a familiar one.",
+    p: "Margin reads for seven qualities: distinctiveness, specificity, reflection, voice, structure, memorability, and prose control. The question behind all of them is the same one a real reader asks — does this leave them knowing a more specific, less interchangeable person? Not which essay is more dramatic, or about a weightier topic. A mundane topic revealing a rare person outscores a profound topic revealing a familiar one.",
   },
   {
     icon: "pencil",
     tint: "var(--brand-50)",
     ink: "var(--brand)",
-    h: "Prose is measured separately.",
-    p: "Writing quality never moves your score — it is measured on its own channel and reported as a flag: prose is carrying it (reads better than it is), or substance ahead of prose (rare material, undersold telling). That tells you where to spend your remaining effort.",
+    h: "Prose control is measured on its own axis.",
+    p: "Writing quality is one of the seven dimensions, not a multiplier on the others. A polished essay with little to say and a rough draft revealing something real can land in the same range — the profile tells you which is which.",
   },
   {
     icon: "crown",
     tint: "var(--gold-50)",
     ink: "var(--gold-press)",
     h: "Free shows a band. Plus shows the number.",
-    p: "After 10 matchups we can place your band honestly; showing a decimal would be false precision. Plus runs 25 matchups — tight enough to justify the exact score — and surfaces all the evidence: every note, every fix, every reason your essay won or lost a matchup.",
+    p: "Early in the analysis, we can only place your score honestly within a range; showing a decimal at that point would be false precision. Once the range has narrowed enough, Plus unlocks the exact score and the full evidence behind it — every dimension, every excerpt, every revision priority.",
   },
   {
     icon: "chart",
     tint: "var(--green-50)",
     ink: "var(--green-ink)",
     h: "Every score is uncertain, and we say so.",
-    p: "When independent readings disagree about your essay, your band gets wider and we tell you. A precise-looking number that doesn't correspond to anything real is worse than no number at all.",
+    p: "When Margin's read on your essay isn't yet settled, your band stays wide and we tell you. A precise-looking number that doesn't correspond to anything real is worse than no number at all.",
   },
 ];
 
@@ -66,8 +66,8 @@ export default function HowScoringWorks() {
             A number that <span style={{ color: "var(--brand)" }}>means</span> something.
           </h1>
           <p className="lede">
-            Every point is earned in a matchup against another essay. Here is exactly how it
-            works, and why the scale is set where it is.
+            Margin evaluates your essay against a carefully ranked reference field. Here is
+            exactly how that works, and why the scale is set where it is.
           </p>
         </div>
 

@@ -7,16 +7,17 @@ import {
   wordCount,
 } from "@/lib/validate";
 import { assertFullEvalAllowed } from "@/lib/quota";
-import { runStubEvaluation } from "@/lib/evaluate";
 
 export const runtime = "nodejs";
 
 /**
- * Create an essay + draft 1 and score it immediately.
+ * Create an essay + draft 1 and an evaluation row in "running" status.
  *
- * Scoring is a local stub for now (see src/lib/evaluate.ts) — a real,
- * separately-hosted engine will replace it, but the row shape (status
- * "done" up front, elo/ci/result populated) stays the same either way.
+ * Scoring itself is not triggered here — it happens once the client mounts
+ * the live evaluation experience and its transport calls
+ * `POST /api/evaluations/[id]/run`. Splitting creation from scoring keeps
+ * this request fast and lets the evaluation ID persist immediately, so a
+ * refresh mid-analysis can always reconstruct the screen from the DB.
  */
 export async function POST(req: Request) {
   try {
@@ -48,7 +49,6 @@ export async function POST(req: Request) {
       .single();
     if (draftErr) throw new Error(draftErr.message);
 
-    const scored = runStubEvaluation();
     const { data: evaluation, error: evalErr } = await ctx.db
       .from("evaluations")
       .insert({
@@ -57,11 +57,7 @@ export async function POST(req: Request) {
         user_id: ctx.user.id,
         kind: "full",
         budget: 1,
-        matches_done: 1,
-        status: "done",
-        phase: "done",
-        ...scored,
-        completed_at: new Date().toISOString(),
+        status: "running",
       })
       .select()
       .single();
