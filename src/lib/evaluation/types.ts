@@ -141,6 +141,36 @@ export interface EvaluationResult {
   mock: boolean;
 }
 
+/**
+ * Guards against evaluation rows stored under the previous (pre-rebuild)
+ * schema — wins/losses/ties, fractional dimensions, no `scoreInterval` or
+ * `dimensionDetails`. Those rows exist in production for any essay scored
+ * before this migration and must never be assumed to match the current
+ * shape: destructuring a legacy `result` as if it were an `EvaluationResult`
+ * throws (e.g. `result.scoreInterval` is `undefined`), which previously
+ * crashed every page that renders the sidebar's recent-essays list. Callers
+ * that read a stored `result` should validate it with this first and treat
+ * a `false` as "needs a fresh evaluation," not attempt to render it.
+ */
+export function isValidEvaluationResult(value: unknown): value is EvaluationResult {
+  if (!value || typeof value !== "object") return false;
+  const r = value as Record<string, unknown>;
+  const interval = r.scoreInterval as Record<string, unknown> | undefined;
+  return (
+    typeof r.score === "number" &&
+    !!interval &&
+    typeof interval.low === "number" &&
+    typeof interval.high === "number" &&
+    !!r.dimensions &&
+    typeof r.dimensions === "object" &&
+    Array.isArray(r.dimensionDetails) &&
+    Array.isArray(r.strengths) &&
+    Array.isArray(r.revisionPriorities) &&
+    Array.isArray(r.confirmedInsights) &&
+    Array.isArray(r.nextDraftPlan)
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Transport event contract (mirrors the desired SSE backend contract)
 // ---------------------------------------------------------------------------

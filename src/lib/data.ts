@@ -1,11 +1,24 @@
 import "server-only";
 import { supabaseServer } from "./supabase/server";
+import { isValidEvaluationResult } from "./evaluation/types";
 import type { Draft, Essay, Evaluation, Plan, Profile } from "./types";
 
 /**
  * Read helpers for server components. These use the request-scoped client, so
  * RLS guarantees the caller only ever sees their own rows.
  */
+
+/** Rows scored before this rebuild carry a `result` in the old shape
+ *  (wins/losses/dimensions as fractions, no scoreInterval). Treat those as
+ *  if scoring hadn't produced a usable result yet, rather than letting
+ *  every downstream reader crash on a shape it doesn't recognize — the
+ *  live experience will transparently re-run and overwrite it. */
+function sanitizeEvaluation(ev: Evaluation): Evaluation {
+  if (ev.result && !isValidEvaluationResult(ev.result)) {
+    return { ...ev, result: null };
+  }
+  return ev;
+}
 
 export interface EssayListItem {
   essay: Essay;
@@ -45,16 +58,19 @@ export async function listEssays(): Promise<EssayListItem[]> {
       .order("created_at", { ascending: false }),
   ]);
 
-  return (essays as Essay[]).map((essay) => ({
-    essay,
-    latestDraft:
-      (drafts?.find((d) => d.essay_id === essay.id) as EssayListItem["latestDraft"]) ?? null,
-    latestEval: ((evals ?? []).find((ev) => ev.essay_id === essay.id) as Evaluation) ?? null,
-  }));
+  return (essays as Essay[]).map((essay) => {
+    const latest = (evals ?? []).find((ev) => ev.essay_id === essay.id) as Evaluation | undefined;
+    return {
+      essay,
+      latestDraft:
+        (drafts?.find((d) => d.essay_id === essay.id) as EssayListItem["latestDraft"]) ?? null,
+      latestEval: latest ? sanitizeEvaluation(latest) : null,
+    };
+  });
 }
 
 export function bandLabel(ev: Evaluation | null): string | null {
-  if (!ev || ev.status !== "done" || !ev.result) return null;
+  if (!ev || ev.status !== "done" || !ev.result?.scoreInterval) return null;
   const { low, high } = ev.result.scoreInterval;
   return `${low}–${high}`;
 }
@@ -82,7 +98,7 @@ export async function getEssayBundle(essayId: string): Promise<{
   return {
     essay: essay as Essay,
     drafts: (drafts ?? []) as Draft[],
-    evaluations: (evaluations ?? []) as Evaluation[],
+    evaluations: ((evaluations ?? []) as Evaluation[]).map(sanitizeEvaluation),
   };
 }
 

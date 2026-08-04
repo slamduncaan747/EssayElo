@@ -1,16 +1,30 @@
 import "server-only";
 import type { Evaluation } from "../types";
-import type { EvaluationEvent } from "./types";
+import { isValidEvaluationResult, type EvaluationEvent } from "./types";
 import { ERROR_COPY } from "./copy";
 
 /** Turns a DB evaluation row into the terminal event(s) a transport would
  *  have emitted for it. Used by both the reload/reconnect GET route and the
  *  run route's response, so the client always sees the same event shape
- *  regardless of which one produced it. */
+ *  regardless of which one produced it. Callers here read the row straight
+ *  from the DB (not through `@/lib/data`'s sanitized helpers), so a
+ *  pre-rebuild `result` shape is re-validated rather than trusted. */
 export function eventsFromRow(ev: Evaluation): EvaluationEvent[] {
   const events: EvaluationEvent[] = [
     { type: "analysis.started", sequence: 0, evaluation_id: ev.id },
   ];
+
+  if (ev.status === "done" && ev.result && !isValidEvaluationResult(ev.result)) {
+    events.push({
+      type: "evaluation.failed",
+      sequence: 1,
+      evaluation_id: ev.id,
+      stage: "scoring",
+      message: "This essay was scored under an older version of Margin. Try again for an up-to-date result.",
+      partialResult: null,
+    });
+    return events;
+  }
 
   if (ev.status === "done" && ev.result) {
     if (ev.feedback_status === "failed") {

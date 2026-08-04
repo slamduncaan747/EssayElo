@@ -5,7 +5,7 @@ import { callEvaluator, EvaluatorError, normalizeEvaluatorResponse } from "@/lib
 import { evaluatorMockFlag } from "@/lib/evaluation/serverMock";
 import { eventsFromRow } from "@/lib/evaluation/fromRow";
 import { ERROR_COPY } from "@/lib/evaluation/copy";
-import type { EvaluationEvent } from "@/lib/evaluation/types";
+import { isValidEvaluationResult, type EvaluationEvent } from "@/lib/evaluation/types";
 import type { Evaluation } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -40,7 +40,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!evRow) throw Object.assign(new Error("Not found"), { status: 404 });
     let evaluation = evRow as Evaluation;
 
-    if (evaluation.status === "done" && evaluation.feedback_status !== "failed") {
+    // A row scored before this rebuild carries the old result shape (no
+    // scoreInterval/dimensionDetails) — isValidEvaluationResult catches
+    // that and falls through to re-running rather than short-circuiting
+    // on data nothing downstream can render.
+    if (
+      evaluation.status === "done" &&
+      evaluation.feedback_status !== "failed" &&
+      isValidEvaluationResult(evaluation.result)
+    ) {
       return NextResponse.json({ events: eventsFromRow(evaluation) });
     }
 
