@@ -139,10 +139,16 @@ export default async function Dashboard({
                   ) : running ? (
                     <div className="stack g4">
                       <div className="row g4">
-                        <span className="medal medal-live">
-                          <span className="pulse-dot" />
+                        <span className="medal-live" aria-hidden="true">
+                          <span className="medal-live-ring" />
+                          <Icon name="compass" size={22} />
                         </span>
-                        <span className="small">Analysis in progress</span>
+                        <div className="stack g1">
+                          <b style={{ fontSize: 14, color: "var(--brand-ink)" }}>
+                            Analysis in progress
+                          </b>
+                          <span className="tiny">Margin is reading your draft</span>
+                        </div>
                       </div>
                       <div className="meter meter-sm meter-indeterminate" />
                     </div>

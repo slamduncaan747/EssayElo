@@ -2,6 +2,7 @@
 
 import { DIMENSION_LABELS } from "@/lib/evaluation/copy";
 import type { Insight } from "@/lib/evaluation/types";
+import Icon from "../Icon";
 
 function scrollToEvidence(insightId: string) {
   const el = document.getElementById(`evidence-${insightId}`);
@@ -15,20 +16,25 @@ export function LiveInsightCard({ insight }: { insight: Insight }) {
   return (
     <button
       type="button"
-      className="note-card fade-up"
-      style={{ textAlign: "left", width: "100%" }}
+      className="insight-card fade-up"
       onClick={() => insight.evidence && scrollToEvidence(insight.id)}
       disabled={!insight.evidence}
     >
-      <div className="note-head">
-        <span className="tally-mark" style={{ background: "var(--brand-50)", color: "var(--brand)" }}>
-          ✦
+      <div className="insight-card-head">
+        <span className="insight-mark">
+          <Icon name="spark" size={13} />
         </span>
-        {insight.title}
+        <span>{insight.title}</span>
       </div>
-      <p className="note-body">{insight.text}</p>
-      <span className="tiny" style={{ color: "var(--gold-hi)" }}>
+      <p className="insight-card-body">{insight.text}</p>
+      <span className="insight-card-foot">
         {label}
+        {insight.evidence ? (
+          <span className="insight-card-jump">
+            Jump to line
+            <Icon name="arrowRight" size={12} />
+          </span>
+        ) : null}
       </span>
     </button>
   );

@@ -27,6 +27,34 @@ export function eventsFromRow(ev: Evaluation): EvaluationEvent[] {
   }
 
   if (ev.status === "done" && ev.result) {
+    // Scored, but the coaching pass hasn't run yet. Surface the score-bearing
+    // phase rather than completion — the client follows up with the feedback
+    // request, and only that produces `evaluation.completed`.
+    if (ev.feedback_status === "pending") {
+      events.push({
+        type: "analysis.update",
+        sequence: 1,
+        evaluation_id: ev.id,
+        progress: 92,
+        phase: "synthesizing",
+        provisional_score: ev.result.score,
+        score_interval: ev.result.scoreInterval,
+        tier: ev.result.tier,
+        distance_to_next_tier: ev.result.distanceToNextTier,
+        confidence: "stable",
+        dimensions: ev.result.dimensions,
+        strongest_signal: ev.result.strongestSignal,
+        focus_area: ev.result.focusArea,
+      });
+      events.push({
+        type: "feedback.started",
+        sequence: 2,
+        evaluation_id: ev.id,
+        progress: 94,
+      });
+      return events;
+    }
+
     if (ev.feedback_status === "failed") {
       events.push({
         type: "evaluation.failed",

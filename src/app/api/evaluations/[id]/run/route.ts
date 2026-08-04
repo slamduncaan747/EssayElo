@@ -17,13 +17,15 @@ export const runtime = "nodejs";
 export const maxDuration = 260;
 
 /**
- * Triggers (or re-triggers) the actual scoring call for an evaluation that
- * belongs to the caller. Idempotent: calling it again on an already-done
- * evaluation with healthy feedback is a no-op that just returns the stored
- * result; calling it on a failed evaluation (scoring or feedback-only)
- * re-attempts the single, atomic evaluator call — the current API has no
- * way to regenerate feedback alone, so a feedback-only retry re-runs the
- * whole thing rather than duplicating the score.
+ * Scoring only.
+ *
+ * The written coaching is a separate request (`POST .../feedback`) because
+ * the two stages together would exceed a single serverless function's time
+ * budget — the evaluator alone can run to ~240s. Splitting them also lets
+ * the UI show the settled score while the revision plan is still being
+ * written, which is the "Building your revision plan" phase.
+ *
+ * Idempotent: an evaluation that already has a valid result short-circuits.
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -44,11 +46,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // scoreInterval/dimensionDetails) — isValidEvaluationResult catches
     // that and falls through to re-running rather than short-circuiting
     // on data nothing downstream can render.
-    if (
-      evaluation.status === "done" &&
-      evaluation.feedback_status !== "failed" &&
-      isValidEvaluationResult(evaluation.result)
-    ) {
+    if (evaluation.status === "done" && isValidEvaluationResult(evaluation.result)) {
       return NextResponse.json({ events: eventsFromRow(evaluation) });
     }
 
@@ -63,17 +61,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       const raw = await callEvaluator({ essay: draft.content, mock: evaluatorMockFlag() });
       const result = normalizeEvaluatorResponse(raw, draft.content, evaluation.id, evaluatorMockFlag());
 
-      const hasFeedback =
-        result.dimensionDetails.length > 0 &&
-        result.strengths.length > 0 &&
-        result.revisionPriorities.length > 0;
-
       const { data: updated, error: updateErr } = await ctx.db
         .from("evaluations")
         .update({
           status: "done",
-          feedback_status: hasFeedback ? "done" : "failed",
-          feedback_error: hasFeedback ? null : "The written feedback did not come back complete.",
+          // Coaching hasn't run yet — the client follows up with the
+          // feedback request, which flips this to done or failed.
+          feedback_status: "pending",
+          feedback_error: null,
           result,
           error: null,
           completed_at: new Date().toISOString(),

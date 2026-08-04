@@ -70,7 +70,8 @@ export function FeedbackExperience({
   async function retryFeedback() {
     setRetrying(true);
     try {
-      await fetch(`/api/evaluations/${result.evaluationId}/run`, { method: "POST" });
+      // Feedback-only retry — never re-runs scoring, so the score can't move.
+      await fetch(`/api/evaluations/${result.evaluationId}/feedback`, { method: "POST" });
       router.refresh();
     } finally {
       setRetrying(false);

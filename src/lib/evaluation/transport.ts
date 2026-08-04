@@ -93,25 +93,59 @@ export class FinalResponseTransport implements EvaluationTransport {
     let cancelled = false;
     let sequence = 0;
 
-    onEvent({ type: "analysis.started", sequence: sequence++, evaluation_id: sessionId });
+    const emit = (e: EvaluationEvent) => {
+      if (!cancelled) onEvent({ ...e, sequence: sequence++ });
+    };
 
-    fetch(`/api/evaluations/${sessionId}/run`, { method: "POST" })
-      .then((res) => res.json())
-      .then((data: { events: EvaluationEvent[] }) => {
-        if (cancelled) return;
-        for (const e of data.events) onEvent({ ...e, sequence: sequence++ });
-      })
-      .catch(() => {
-        if (cancelled) return;
-        onEvent({
+    emit({ type: "analysis.started", sequence: 0, evaluation_id: sessionId });
+
+    /**
+     * Two real signals, in order: scoring, then coaching. They are separate
+     * requests because together they exceed a single serverless function's
+     * time budget — and splitting them means the score lands in the UI while
+     * the revision plan is still being written, instead of both appearing at
+     * the very end.
+     */
+    (async () => {
+      let scored: { events: EvaluationEvent[] };
+      try {
+        const res = await fetch(`/api/evaluations/${sessionId}/run`, { method: "POST" });
+        scored = await res.json();
+      } catch {
+        emit({
           type: "evaluation.failed",
-          sequence: sequence++,
+          sequence: 0,
           evaluation_id: sessionId,
           stage: "scoring",
           message: "We saved your essay, but the analysis did not finish. You can safely try again.",
           partialResult: null,
         });
-      });
+        return;
+      }
+      if (cancelled) return;
+      for (const e of scored.events) emit(e);
+
+      // Only chase feedback when scoring actually left it pending.
+      const needsFeedback = scored.events.some((e) => e.type === "feedback.started");
+      if (!needsFeedback) return;
+
+      try {
+        const res = await fetch(`/api/evaluations/${sessionId}/feedback`, { method: "POST" });
+        const data: { events: EvaluationEvent[] } = await res.json();
+        if (cancelled) return;
+        for (const e of data.events) emit(e);
+      } catch {
+        emit({
+          type: "evaluation.failed",
+          sequence: 0,
+          evaluation_id: sessionId,
+          stage: "feedback",
+          message:
+            "Your score is in, but the written feedback did not finish generating. You can safely try again — your score is safe either way.",
+          partialResult: null,
+        });
+      }
+    })();
 
     return () => {
       cancelled = true;

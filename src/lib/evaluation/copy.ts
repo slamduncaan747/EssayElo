@@ -17,6 +17,18 @@ export const DIMENSION_LABELS: Record<DimensionKey, string> = {
   prose_control: "Prose control",
 };
 
+/** Real words that fit a radar axis. Never truncate the full labels with an
+ *  ellipsis — "Distinctiv…" reads as a rendering bug, not a design choice. */
+export const DIMENSION_SHORT_LABELS: Record<DimensionKey, string> = {
+  distinctiveness: "Distinct",
+  specificity: "Specific",
+  reflection: "Reflection",
+  voice: "Voice",
+  structure: "Structure",
+  memorability: "Memorable",
+  prose_control: "Prose",
+};
+
 export const PHASE_COPY: Record<
   EvaluationStatus,
   { headline: string; secondary: string; progressFloor: number; progressCeil: number }

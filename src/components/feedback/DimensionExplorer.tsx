@@ -16,16 +16,30 @@ function DimensionCard({ detail, isPlus, defaultOpen }: { detail: DimensionDetai
   return (
     <details id={`dimension-${detail.key}`} className="dimension-card" open={defaultOpen}>
       <summary className="dimension-card-head">
-        <span className="stack g1" style={{ flex: 1, minWidth: 0 }}>
-          <span className="h3">{DIMENSION_LABELS[detail.key]}</span>
-          {detail.interpretation ? <span className="small">{detail.interpretation}</span> : null}
+        <span className="dimension-score-block">
+          <b style={{ color: statusColor(detail.score) }}>{detail.score}</b>
+          <span className="dimension-score-bar" aria-hidden="true">
+            <span
+              style={{
+                width: `${Math.max(3, detail.score)}%`,
+                background: statusColor(detail.score),
+              }}
+            />
+          </span>
         </span>
-        <span className="dimension-card-score" style={{ color: statusColor(detail.score) }}>
-          {detail.score}
+
+        <span className="dimension-card-main">
+          <span className="dimension-card-title">
+            {DIMENSION_LABELS[detail.key]}
+            <span className="dimension-status" style={{ color: statusColor(detail.score) }}>
+              {status}
+            </span>
+          </span>
+          {detail.interpretation ? (
+            <span className="small">{detail.interpretation}</span>
+          ) : null}
         </span>
-        <span className="chip" style={{ color: statusColor(detail.score) }}>
-          {status}
-        </span>
+
         <Icon name="chevron" size={16} className="dimension-chevron" />
       </summary>
 

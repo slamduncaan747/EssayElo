@@ -33,6 +33,24 @@ export default function EssayResult({
 }) {
   const isPlus = plan === "plus";
 
+  // Scored but the coaching pass hasn't finished (or was interrupted by a
+  // reload): go back through the live experience, which resumes the feedback
+  // request rather than rendering a dashboard of empty cards.
+  if (view.status === "done" && view.result && view.feedbackStatus === "pending") {
+    return (
+      <EvaluationExperience
+        title={title}
+        version={version}
+        essayId={essayId}
+        evaluationId={view.id}
+        content={content}
+        isPlus={isPlus}
+        mock={mock}
+        fixtureScenario={fixtureScenario}
+      />
+    );
+  }
+
   if (view.status === "done" && view.result) {
     return (
       <FeedbackExperience

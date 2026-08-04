@@ -6,8 +6,8 @@ export const metadata = { title: "Log in — Margin" };
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; error?: string }>;
 }) {
-  const { next } = await searchParams;
-  return <AuthForm mode="login" action={signIn} next={next} />;
+  const { next, error } = await searchParams;
+  return <AuthForm mode="login" action={signIn} next={next} initialError={error} />;
 }
