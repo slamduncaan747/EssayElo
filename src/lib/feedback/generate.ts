@@ -1,5 +1,4 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
 import {
   DIMENSION_KEYS,
   type DimensionKey,
@@ -16,23 +15,116 @@ import { buildFeedbackUserMessage, FEEDBACK_SCHEMA, FEEDBACK_SYSTEM } from "./pr
  * Written coaching, generated separately from scoring.
  *
  * The scoring engine places the essay against the ranked reference field;
- * it is not a writing coach, and its feedback pass runs on a small model.
- * This module takes those scores as given and produces the actual coaching
- * with a frontier model, which is where feedback quality actually comes
- * from — a weak model writes generic advice no matter how good the prompt.
+ * it is not a writing coach, and its own feedback pass runs on a small
+ * model. This module takes those scores as given and produces the actual
+ * coaching on a frontier model, which is where feedback quality comes from
+ * — a small model writes generic advice no matter how good the prompt.
+ *
+ * Reuses the same OpenAI account as the evaluator service. Plain fetch
+ * against /chat/completions rather than an SDK: no new dependency, and
+ * OPENAI_BASE_URL can be repointed at any OpenAI-compatible endpoint
+ * without touching this file.
  */
 
 export class FeedbackError extends Error {}
 
-let cached: Anthropic | null = null;
-function anthropic(): Anthropic {
-  if (!cached) {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new FeedbackError("ANTHROPIC_API_KEY is not configured");
+/** Strong by default — this is the whole point of the separate pass. The
+ *  evaluator's own gpt-5-nano is what produced the weak feedback. */
+const DEFAULT_MODEL = "gpt-5";
+
+function config() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new FeedbackError("OPENAI_API_KEY is not configured");
+  return {
+    apiKey,
+    baseUrl: (process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, ""),
+    model: process.env.FEEDBACK_MODEL ?? DEFAULT_MODEL,
+    reasoningEffort: process.env.FEEDBACK_REASONING_EFFORT ?? "high",
+  };
+}
+
+/**
+ * One chat-completions call with a strict JSON schema.
+ *
+ * Self-heals across model generations rather than branching on model name:
+ * the gpt-5 family rejects `max_tokens` in favor of `max_completion_tokens`
+ * and rejects any non-default `temperature`, while older models reject
+ * `reasoning_effort`. Each 400 narrows the request and retries once, so the
+ * same code works whether FEEDBACK_MODEL points at gpt-5, gpt-4.1, or an
+ * OpenAI-compatible third party.
+ */
+async function callModel(system: string, user: string): Promise<string> {
+  const { apiKey, baseUrl, model, reasoningEffort } = config();
+
+  let tokenParam: "max_tokens" | "max_completion_tokens" = "max_completion_tokens";
+  let sendReasoning = true;
+  let sendTemperature = false;
+
+  const body = () =>
+    JSON.stringify({
+      model,
+      [tokenParam]: 16000,
+      ...(sendTemperature ? { temperature: 0.4 } : {}),
+      ...(sendReasoning ? { reasoning_effort: reasoningEffort } : {}),
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: "margin_feedback", strict: true, schema: FEEDBACK_SCHEMA },
+      },
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+    });
+
+  const MAX_ATTEMPTS = 5;
+  let res!: Response;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    res = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: body(),
+      // The route allows 300s; stay just under so we surface the model's own
+      // response rather than aborting first and masking what happened.
+      signal: AbortSignal.timeout(280_000),
+    });
+    if (res.ok) break;
+
+    const detail = await res.text().catch(() => "");
+
+    if (res.status === 400 && tokenParam === "max_completion_tokens" && /max_completion_tokens/i.test(detail)) {
+      tokenParam = "max_tokens";
+      continue;
     }
-    cached = new Anthropic({ maxRetries: 2 });
+    if (res.status === 400 && sendReasoning && /reasoning_effort/i.test(detail)) {
+      sendReasoning = false;
+      continue;
+    }
+    if (res.status === 400 && !sendTemperature && /temperature/i.test(detail)) {
+      sendTemperature = true;
+      continue;
+    }
+
+    const retryable = res.status === 429 || res.status >= 500;
+    if (!retryable || attempt === MAX_ATTEMPTS) {
+      // Never log essay text — status plus a short detail is enough to
+      // distinguish a bad key from a bad schema from an overloaded model.
+      console.error("feedback_model_error", { status: res.status, detail: detail.slice(0, 200) });
+      throw new FeedbackError(`Coaching model request failed (${res.status})`);
+    }
+    await new Promise((r) => setTimeout(r, Math.min(1500 * 2 ** (attempt - 1), 20_000)));
   }
-  return cached;
+
+  const data = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
+  };
+  const choice = data.choices?.[0];
+  if (choice?.finish_reason === "length") {
+    throw new FeedbackError("The coaching response was truncated");
+  }
+  const content = choice?.message?.content;
+  if (!content) throw new FeedbackError("Empty coaching response");
+  return content;
 }
 
 interface RawFeedback {
@@ -202,40 +294,11 @@ export interface FeedbackInput {
 }
 
 export async function generateFeedback(input: FeedbackInput) {
-  const client = anthropic();
-
-  // Streaming: the full coaching report is a large structured payload and a
-  // non-streaming request at this max_tokens risks an HTTP timeout.
-  const stream = client.messages.stream({
-    model: "claude-opus-5",
-    max_tokens: 32000,
-    system: FEEDBACK_SYSTEM,
-    thinking: { type: "adaptive" },
-    output_config: {
-      effort: "high",
-      format: {
-        type: "json_schema",
-        schema: FEEDBACK_SCHEMA as unknown as Record<string, unknown>,
-      },
-    },
-    messages: [{ role: "user", content: buildFeedbackUserMessage(input) }],
-  });
-
-  const message = await stream.finalMessage();
-
-  if (message.stop_reason === "refusal") {
-    throw new FeedbackError("The coaching model declined to evaluate this essay");
-  }
-  if (message.stop_reason === "max_tokens") {
-    throw new FeedbackError("The coaching response was truncated");
-  }
-
-  const text = message.content.find((b) => b.type === "text");
-  if (!text || text.type !== "text") throw new FeedbackError("Empty coaching response");
+  const content = await callModel(FEEDBACK_SYSTEM, buildFeedbackUserMessage(input));
 
   let raw: RawFeedback;
   try {
-    raw = JSON.parse(text.text) as RawFeedback;
+    raw = JSON.parse(content) as RawFeedback;
   } catch {
     throw new FeedbackError("Coaching response was not valid JSON");
   }
