@@ -48,9 +48,12 @@ export async function callEvaluator(req: EvaluatorRequest): Promise<unknown> {
       "X-API-Key": env("EVALUATOR_API_KEY"),
     },
     body: JSON.stringify({ essay: req.essay, mock: req.mock }),
-    // The engine can legitimately take close to a minute; don't let the
-    // platform's default fetch timeout cut it off early.
-    signal: AbortSignal.timeout(120_000),
+    // Real (non-mock) evaluations can legitimately take minutes — the
+    // deployed service's own request timeout is ~220s and its Cloud Run
+    // container timeout is 240s. Stay just under that so a slow-but-alive
+    // request gets the service's own timeout response instead of us
+    // aborting first and masking what actually happened.
+    signal: AbortSignal.timeout(235_000),
   });
 
   if (!res.ok) {

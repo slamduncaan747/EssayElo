@@ -9,6 +9,12 @@ import type { EvaluationEvent } from "@/lib/evaluation/types";
 import type { Evaluation } from "@/lib/types";
 
 export const runtime = "nodejs";
+// A real evaluation can take minutes. Without this, Vercel's default
+// serverless function timeout (10s on Hobby, 15s on Pro unless raised) kills
+// the request long before the evaluator responds, which surfaces to the
+// user as a generic "the analysis did not finish" failure. 260s stays under
+// the evaluator's own ~240s Cloud Run container timeout plus headroom.
+export const maxDuration = 260;
 
 /**
  * Triggers (or re-triggers) the actual scoring call for an evaluation that
@@ -70,9 +76,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       if (updateErr) throw new Error(updateErr.message);
       evaluation = updated as Evaluation;
     } catch (evalError) {
+      // Never log essay text or the API key — but the status/error class is
+      // exactly what's needed to tell "misconfigured env vars" apart from
+      // "the evaluator itself failed" apart from "we timed out first"
+      // without ever having to guess from the user-facing message alone.
       console.error("evaluation_run_failed", {
         evaluationId: evaluation.id,
-        isEvaluatorError: evalError instanceof EvaluatorError,
+        errorClass:
+          evalError instanceof EvaluatorError
+            ? "EvaluatorError"
+            : evalError instanceof Error
+              ? evalError.name
+              : typeof evalError,
+        status: evalError instanceof EvaluatorError ? evalError.status : undefined,
+        message: evalError instanceof Error ? evalError.message : undefined,
       });
 
       const { data: updated, error: updateErr } = await ctx.db
