@@ -21,6 +21,7 @@ export default function EssayResult({
   plan,
   mock,
   fixtureScenario,
+  autoStart = false,
 }: {
   title: string;
   version: number;
@@ -30,6 +31,9 @@ export default function EssayResult({
   plan: "free" | "plus";
   mock: boolean;
   fixtureScenario?: FixtureScenario;
+  /** True only on the redirect straight after submitting. Ordinary visits
+   *  watch the evaluation instead of starting a new one. */
+  autoStart?: boolean;
 }) {
   const isPlus = plan === "plus";
 
@@ -47,6 +51,7 @@ export default function EssayResult({
         isPlus={isPlus}
         mock={mock}
         fixtureScenario={fixtureScenario}
+        autoStart={autoStart}
       />
     );
   }

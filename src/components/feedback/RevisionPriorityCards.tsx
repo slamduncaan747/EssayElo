@@ -42,17 +42,17 @@ function PriorityCard({
         <div className="priority-card-body stack g3">
           <blockquote className="dimension-excerpt">&ldquo;{priority.excerpt}&rdquo;</blockquote>
           <p className="copy">{priority.whyItMatters}</p>
-          <div className="note-fix">
+          <div className="callout callout-brand">
             <b>Revision direction</b>
             {priority.direction}
           </div>
-          <div className="note-fix">
+          <div className="callout">
             <b>A guiding question</b>
             {priority.question}
           </div>
-          <div className="well" style={{ background: "var(--gold-50)", borderColor: "var(--gold-100)" }}>
-            <span className="label">Success test</span>
-            <p className="copy" style={{ marginTop: 6 }}>{priority.successTest}</p>
+          <div className="callout callout-gold">
+            <b>Success test</b>
+            {priority.successTest}
           </div>
         </div>
       ) : null}

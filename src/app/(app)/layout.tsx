@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getProfile } from "@/lib/data";
+import { ensureProfile } from "@/lib/data";
 import PlanSwitch from "@/components/PlanSwitch";
 
 /**
@@ -7,7 +7,7 @@ import PlanSwitch from "@/components/PlanSwitch";
  * layout guarantees a profile exists and mounts the dev plan switch.
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const profile = await getProfile();
+  const profile = await ensureProfile();
   if (!profile) redirect("/login");
 
   return (

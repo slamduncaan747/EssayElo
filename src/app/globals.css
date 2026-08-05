@@ -2744,25 +2744,89 @@ select {
 .dimension-excerpt {
   margin: 0;
   padding: var(--s4) var(--s5);
-  border-left: 3px solid var(--brand);
+  border-left: 3px solid var(--brand-100);
   background: var(--surface-2);
   border-radius: 0 var(--r2) var(--r2) 0;
   font-family: var(--serif);
-  font-style: italic;
-  font-size: 14.5px;
-  line-height: 1.6;
-  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--n-800);
 }
 .panel .dimension-excerpt,
 .on-dark .dimension-excerpt {
   background: var(--dark-sunken);
   color: var(--on-dark-2);
+  border-left-color: var(--brand);
+}
+
+/* ---- Light-surface callouts ----
+   The center pane is cream. The dark-panel styles (.note-fix, .note-card)
+   put near-white text on a translucent-black box, which is correct in the
+   espresso rail and unreadable here — these are their light counterparts. */
+.callout {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 13px 15px;
+  border-radius: var(--r2);
+  background: var(--surface-2);
+  border: 1.5px solid var(--line);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.65;
+  color: var(--text-2);
+}
+.callout b {
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+.callout-brand {
+  background: var(--brand-50);
+  border-color: var(--brand-100);
+  color: var(--brand-ink);
+}
+.callout-brand b {
+  color: var(--brand);
+}
+.callout-gold {
+  background: var(--gold-50);
+  border-color: var(--gold-100);
+  color: var(--n-800);
+}
+.callout-gold b {
+  color: var(--gold-ink);
+}
+.callout-green {
+  background: var(--green-50);
+  border-color: var(--green-100);
+  color: var(--green-ink);
+}
+.callout-green b {
+  color: var(--green-ink);
 }
 
 .strength-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--s4);
+  align-items: start;
+}
+.strength-card {
+  border-top: 3px solid var(--green);
+}
+.strength-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: var(--green);
+  color: #fff;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.16);
 }
 
 .priority-card {

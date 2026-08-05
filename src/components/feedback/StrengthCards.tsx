@@ -5,10 +5,10 @@ import Icon from "../Icon";
 function StrengthCard({ strength }: { strength: StrengthCardT }) {
   const label = DIMENSION_LABELS[strength.category as keyof typeof DIMENSION_LABELS] ?? strength.category;
   return (
-    <div className="card card-pad stack g3">
+    <div className="card card-pad stack g3 strength-card">
       <div className="row g2">
-        <span className="tally-mark" style={{ background: "var(--green)", color: "#fff" }}>
-          <Icon name="check" size={13} strokeWidth={2.8} />
+        <span className="strength-mark">
+          <Icon name="check" size={13} strokeWidth={3} />
         </span>
         <span className="chip chip-green">{label}</span>
       </div>
@@ -16,11 +16,7 @@ function StrengthCard({ strength }: { strength: StrengthCardT }) {
       <p className="copy">{strength.explanation}</p>
       <blockquote className="dimension-excerpt">&ldquo;{strength.excerpt}&rdquo;</blockquote>
       <p className="small">{strength.whyItMatters}</p>
-      <div className="well" style={{ background: "var(--green-50)", borderColor: "var(--green-100)" }}>
-        <span className="small" style={{ color: "var(--green-ink)" }}>
-          {strength.protectNote}
-        </span>
-      </div>
+      <div className="callout callout-green">{strength.protectNote}</div>
     </div>
   );
 }

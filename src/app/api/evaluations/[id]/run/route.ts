@@ -50,6 +50,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ events: eventsFromRow(evaluation) });
     }
 
+    /**
+     * Claim the evaluation before spending money on the evaluator.
+     *
+     * Without this, two tabs (or a reload while a run is still in flight)
+     * each fire a full, billable scoring run against the same draft. The
+     * claim is atomic in Postgres — a second caller gets an empty result and
+     * simply reports current state instead of starting a parallel run.
+     */
+    const { data: claimed } = await ctx.db.rpc("claim_evaluation", {
+      p_eval_id: evaluation.id,
+      p_lock_seconds: 300,
+    });
+    if (Array.isArray(claimed) && claimed.length === 0) {
+      return NextResponse.json({ events: eventsFromRow(evaluation), inFlight: true });
+    }
+
     const { data: draft } = await ctx.db
       .from("drafts")
       .select("content")
@@ -68,6 +84,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           // Coaching hasn't run yet — the client follows up with the
           // feedback request, which flips this to done or failed.
           feedback_status: "pending",
+          lock_until: null,
           feedback_error: null,
           result,
           error: null,
@@ -97,7 +114,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
       const { data: updated, error: updateErr } = await ctx.db
         .from("evaluations")
-        .update({ status: "failed", error: ERROR_COPY.scoring })
+        .update({ status: "failed", error: ERROR_COPY.scoring, lock_until: null })
         .eq("id", evaluation.id)
         .select()
         .single();

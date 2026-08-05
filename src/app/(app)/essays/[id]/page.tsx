@@ -16,7 +16,7 @@ export default async function EssayReviewPage({
   searchParams: Promise<{ fresh?: string; scenario?: string }>;
 }) {
   const { id } = await params;
-  const { scenario } = await searchParams;
+  const { fresh, scenario } = await searchParams;
   const [profile, items, bundle] = await Promise.all([
     getProfile(),
     listEssays(),
@@ -47,6 +47,7 @@ export default async function EssayReviewPage({
           plan={profile.plan}
           mock={mock}
           fixtureScenario={fixtureScenario}
+          autoStart={fresh === "1"}
         />
       </main>
     </div>

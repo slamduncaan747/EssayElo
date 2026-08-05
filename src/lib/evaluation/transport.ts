@@ -82,6 +82,17 @@ export class FixtureTransport implements EvaluationTransport {
  * score or dimension movement, and no timer-driven phase advancement.
  */
 export class FinalResponseTransport implements EvaluationTransport {
+  /**
+   * `autoStart` gates whether this transport is allowed to *trigger* work.
+   *
+   * Only the submit flow (and an explicit retry) may start an evaluation.
+   * Revisiting an essay page must never re-trigger scoring — that is what
+   * made every visit to a still-running evaluation kick off a fresh,
+   * billable run of the evaluator. When false, we poll the read-only state
+   * endpoint until the evaluation reaches a terminal state.
+   */
+  constructor(private autoStart: boolean) {}
+
   async startEvaluation(input: EvaluationInput): Promise<EvaluationSession> {
     // The actual network call happens in `subscribe` (see below) — for this
     // transport, "subscribing" and "kicking off the one real request" are
@@ -98,6 +109,44 @@ export class FinalResponseTransport implements EvaluationTransport {
     };
 
     emit({ type: "analysis.started", sequence: 0, evaluation_id: sessionId });
+
+    if (!this.autoStart) {
+      // Read-only: watch an evaluation that was started elsewhere.
+      let stopped = false;
+      let lastSignature = "";
+      const poll = async () => {
+        while (!stopped && !cancelled) {
+          try {
+            const res = await fetch(`/api/evaluations/${sessionId}`);
+            const data: { events: EvaluationEvent[] } = await res.json();
+            if (cancelled) return;
+            // Only dispatch when the server's view actually changed; the
+            // reducer drops stale sequences, but re-emitting an identical
+            // snapshot every few seconds is pure churn.
+            const signature = JSON.stringify(data.events.map((e) => e.type));
+            if (signature !== lastSignature) {
+              lastSignature = signature;
+              for (const e of data.events) emit(e);
+            }
+            if (
+              data.events.some(
+                (e) => e.type === "evaluation.completed" || e.type === "evaluation.failed"
+              )
+            ) {
+              return;
+            }
+          } catch {
+            /* transient — keep polling */
+          }
+          await new Promise((r) => setTimeout(r, 4000));
+        }
+      };
+      poll();
+      return () => {
+        cancelled = true;
+        stopped = true;
+      };
+    }
 
     /**
      * Two real signals, in order: scoring, then coaching. They are separate

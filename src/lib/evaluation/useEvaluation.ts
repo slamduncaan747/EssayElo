@@ -21,6 +21,9 @@ export function useEvaluation(opts: {
   /** Skip the network call and go straight to `subscribe`/`getCurrentState`
    *  replay — used when an evaluation is already complete/failed on load. */
   alreadyResolved?: boolean;
+  /** Whether this mount is allowed to *start* work. False for ordinary page
+   *  visits, which watch an existing evaluation rather than launching one. */
+  autoStart?: boolean;
 }): EvaluationViewState {
   const [state, dispatch] = useReducer(
     (s: EvaluationViewState, action: Parameters<typeof evaluationReducer>[1]) =>
@@ -36,7 +39,7 @@ export function useEvaluation(opts: {
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     transportRef.current = opts.mock
       ? new FixtureTransport(opts.essayContent, opts.fixtureScenario ?? "default", !!reducedMotion)
-      : new FinalResponseTransport();
+      : new FinalResponseTransport(opts.autoStart ?? false);
   }
 
   useEffect(() => {

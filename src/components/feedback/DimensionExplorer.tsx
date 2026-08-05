@@ -47,7 +47,7 @@ function DimensionCard({ detail, isPlus, defaultOpen }: { detail: DimensionDetai
         {isPlus ? (
           <>
             {detail.whatReadersSaw ? (
-              <div className="note-fix">
+              <div className="callout">
                 <b>What readers consistently saw</b>
                 {detail.whatReadersSaw}
               </div>
@@ -57,7 +57,7 @@ function DimensionCard({ detail, isPlus, defaultOpen }: { detail: DimensionDetai
             ) : null}
             {detail.whyItMatters ? <p className="copy">{detail.whyItMatters}</p> : null}
             {detail.revisionQuestion ? (
-              <div className="note-fix">
+              <div className="callout callout-brand">
                 <b>A question worth sitting with</b>
                 {detail.revisionQuestion}
               </div>

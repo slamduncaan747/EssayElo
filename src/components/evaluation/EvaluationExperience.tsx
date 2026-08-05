@@ -30,6 +30,7 @@ export function EvaluationExperience({
    *  "failed", the very first mount must NOT auto-retry — only an explicit
    *  click on "Try again" should re-trigger scoring. */
   initialStatus = "running",
+  autoStart = false,
 }: {
   title: string;
   version: number;
@@ -40,6 +41,10 @@ export function EvaluationExperience({
   mock: boolean;
   fixtureScenario?: FixtureScenario;
   initialStatus?: "running" | "failed";
+  /** Only the submit flow and an explicit retry may start scoring. An
+   *  ordinary page visit watches instead — otherwise revisiting an essay
+   *  re-fires a full billable evaluation every time. */
+  autoStart?: boolean;
 }) {
   const [retryNonce, setRetryNonce] = useState(0);
 
@@ -55,6 +60,9 @@ export function EvaluationExperience({
       mock={mock}
       fixtureScenario={fixtureScenario}
       alreadyResolved={initialStatus === "failed" && retryNonce === 0}
+      // A retry is an explicit user action, so it may start work even when
+      // the original page visit was watch-only.
+      autoStart={autoStart || retryNonce > 0}
       onRetry={() => setRetryNonce((n) => n + 1)}
     />
   );
@@ -70,6 +78,7 @@ function EvaluationLive({
   mock,
   fixtureScenario,
   alreadyResolved,
+  autoStart,
   onRetry,
 }: {
   title: string;
@@ -81,6 +90,7 @@ function EvaluationLive({
   mock: boolean;
   fixtureScenario?: FixtureScenario;
   alreadyResolved: boolean;
+  autoStart: boolean;
   onRetry: () => void;
 }) {
   const state = useEvaluation({
@@ -90,6 +100,7 @@ function EvaluationLive({
     mock,
     fixtureScenario,
     alreadyResolved,
+    autoStart,
   });
 
   useEffect(() => {

@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseServer } from "./supabase/server";
+import { supabaseAdmin } from "./supabase/admin";
 import { isValidEvaluationResult } from "./evaluation/types";
 import type { Draft, Essay, Evaluation, Plan, Profile } from "./types";
 
@@ -33,6 +34,45 @@ export async function getProfile(): Promise<Profile | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
   const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+  return (data as Profile) ?? null;
+}
+
+/**
+ * The signed-in user's profile, creating it if the row is missing.
+ *
+ * A profile is normally created by the `handle_new_user` trigger at signup,
+ * but any account that predates the trigger — or whose trigger run failed —
+ * ends up authenticated with no profile row. Treating that as "not signed
+ * in" produced a redirect loop: the app layout sent them to /login, and
+ * middleware saw a valid session and sent them straight back. From the
+ * user's side that is indistinguishable from login being broken.
+ *
+ * Self-healing here rather than in the trigger keeps existing accounts
+ * working without a data migration.
+ */
+export async function ensureProfile(): Promise<Profile | null> {
+  const existing = await getProfile();
+  if (existing) return existing;
+
+  const supabase = await supabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  // profiles has no insert policy (plan changes are service-role only), so
+  // the backfill has to go through the admin client.
+  const admin = supabaseAdmin();
+  const { data, error } = await admin
+    .from("profiles")
+    .upsert({ id: user.id, email: user.email ?? null }, { onConflict: "id" })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("profile_backfill_failed", { userId: user.id, message: error.message });
+    return null;
+  }
   return (data as Profile) ?? null;
 }
 
